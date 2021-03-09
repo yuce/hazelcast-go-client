@@ -29,10 +29,10 @@ import (
 
 	"os"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/internal/core"
-	"github.com/hazelcast/hazelcast-go-client/v4/internal/core/predicate"
+	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/core/predicate"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
-	"github.com/hazelcast/hazelcast-go-client/v4/internal/serialization"
+	"github.com/hazelcast/hazelcast-go-client/v4/serialization"
 )
 
 const (

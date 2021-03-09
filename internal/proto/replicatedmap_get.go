@@ -15,7 +15,7 @@
 package proto
 
 import (
-	"github.com/hazelcast/hazelcast-go-client/v4/internal/serialization"
+	"github.com/hazelcast/hazelcast-go-client/v4/serialization"
 )
 
 func replicatedmapGetCalculateSize(name string, key serialization.Data) int {

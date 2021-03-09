@@ -3,14 +3,14 @@ package cluster
 import (
 	"errors"
 	"fmt"
-	"github.com/hazelcast/hazelcast-go-client/v4/internal"
-	"github.com/hazelcast/hazelcast-go-client/v4/internal/core"
-	"github.com/hazelcast/hazelcast-go-client/v4/internal/core/logger"
+	"github.com/hazelcast/hazelcast-go-client/v4/core"
+    "github.com/hazelcast/hazelcast-go-client/v4/config"
+	"github.com/hazelcast/hazelcast-go-client/v4/core/logger"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/invocation"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto/codec"
-	"github.com/hazelcast/hazelcast-go-client/v4/internal/security"
-	"github.com/hazelcast/hazelcast-go-client/v4/internal/serialization/spi"
+	"github.com/hazelcast/hazelcast-go-client/v4/security"
+	"github.com/hazelcast/hazelcast-go-client/v4/serialization/spi"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -39,11 +39,11 @@ type ConnectionManagerCreationBundle struct {
 	InvocationService    invocation.Service
 	SmartRouting         bool
 	Logger               logger.Logger
-	AddressTranslator    internal.AddressTranslator
+	AddressTranslator    AddressTranslator
 	ClusterService       *ServiceImpl
 	PartitionService     *PartitionServiceImpl
 	SerializationService spi.SerializationService
-	NetworkConfig        NetworkConfig
+	NetworkConfig        *config.NetworkConfig
 	Credentials          security.Credentials
 	ClientName           string
 }
@@ -84,7 +84,7 @@ type ConnectionManagerImpl struct {
 	clusterService       *ServiceImpl
 	partitionService     *PartitionServiceImpl
 	serializationService spi.SerializationService
-	networkConfig        NetworkConfig
+	networkConfig        *config.NetworkConfig
 	credentials          security.Credentials
 	heartbeatTimeout     time.Duration
 	clientName           string
@@ -95,7 +95,7 @@ type ConnectionManagerImpl struct {
 	listeners     []Listener
 
 	nextConnectionID  int64
-	addressTranslator internal.AddressTranslator
+	addressTranslator AddressTranslator
 	smartRouting      bool
 	alive             atomic.Value
 	logger            logger.Logger

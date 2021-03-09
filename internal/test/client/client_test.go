@@ -25,8 +25,8 @@ import (
 	"math/rand"
 	"sync"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/internal/config/property"
-	"github.com/hazelcast/hazelcast-go-client/v4/internal/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/config/property"
+	"github.com/hazelcast/hazelcast-go-client/v4/core"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/test/testutil"
 

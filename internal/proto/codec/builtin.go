@@ -4,11 +4,11 @@ import (
 	"encoding/binary"
 	"strings"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/internal/config"
-	"github.com/hazelcast/hazelcast-go-client/v4/internal/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/config"
+	"github.com/hazelcast/hazelcast-go-client/v4/core"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
-	"github.com/hazelcast/hazelcast-go-client/v4/internal/serialization"
-	"github.com/hazelcast/hazelcast-go-client/v4/internal/serialization/spi"
+	"github.com/hazelcast/hazelcast-go-client/v4/serialization"
+	"github.com/hazelcast/hazelcast-go-client/v4/serialization/spi"
 )
 
 // Encoder for ClientMessage and value

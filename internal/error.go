@@ -16,11 +16,13 @@ package internal
 
 import (
 	"fmt"
-
-	"github.com/hazelcast/hazelcast-go-client/v4/internal/core"
+    "errors"
+	"github.com/hazelcast/hazelcast-go-client/v4/core"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto/bufutil"
 )
+
+var ErrAddressNotFound = errors.New("address not found")
 
 func CreateHazelcastError(err *proto.ServerError) core.HazelcastError {
 	return createHazelcastError(err)

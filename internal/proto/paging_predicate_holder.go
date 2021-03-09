@@ -1,6 +1,6 @@
 package proto
 
-import "github.com/hazelcast/hazelcast-go-client/v4/internal/serialization"
+import "github.com/hazelcast/hazelcast-go-client/v4/serialization"
 
 type PagingPredicateHolder struct {
 	anchorDataListHolder AnchorDataListHolder

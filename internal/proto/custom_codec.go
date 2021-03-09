@@ -14,7 +14,7 @@
 
 package proto
 
-import "github.com/hazelcast/hazelcast-go-client/v4/internal/core"
+import "github.com/hazelcast/hazelcast-go-client/v4/core"
 
 /*
 Address Codec

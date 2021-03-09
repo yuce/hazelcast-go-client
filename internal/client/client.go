@@ -2,30 +2,26 @@ package client
 
 import (
 	"fmt"
-	"github.com/hazelcast/hazelcast-go-client/v4/internal"
+	"github.com/hazelcast/hazelcast-go-client/v4/core"
+    "github.com/hazelcast/hazelcast-go-client/v4/config"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/cluster"
-	"github.com/hazelcast/hazelcast-go-client/v4/internal/core/logger"
+	"github.com/hazelcast/hazelcast-go-client/v4/core/logger"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/invocation"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proxy"
-	"github.com/hazelcast/hazelcast-go-client/v4/internal/security"
-	"github.com/hazelcast/hazelcast-go-client/v4/internal/serialization"
+	"github.com/hazelcast/hazelcast-go-client/v4/security"
+	"github.com/hazelcast/hazelcast-go-client/v4/serialization"
 	"sync/atomic"
 	"time"
 )
 
 var nextId int32
 
-type Client interface {
-	Name() string
-	GetMap(name string) (proxy.Map, error)
-	Start() error
-}
 
 type Impl struct {
 	// configuration
 	name          string
 	clusterName   string
-	networkConfig *cluster.NetworkConfig
+	networkConfig *config.NetworkConfig
 
 	// components
 	proxyManager proxy.Manager
@@ -40,14 +36,14 @@ type Impl struct {
 	started atomic.Value
 }
 
-func NewImpl(name string, config Config) *Impl {
+func NewImpl(name string, config *config.Config) *Impl {
 	id := atomic.AddInt32(&nextId, 1)
 	if name == "" {
 		name = fmt.Sprintf("hz.client_%d", id)
 	}
 	// TODO: consider disabling manual client name
-	if config.ClientName != "" {
-		name = config.ClientName
+	if config.ClientName() != "" {
+		name = config.ClientName()
 	}
 	clientLogger := logger.New()
 	// TODO: create services
@@ -55,10 +51,10 @@ func NewImpl(name string, config Config) *Impl {
 	if err != nil {
 		panic(fmt.Errorf("error creating client: %w", err))
 	}
-	smartRouting := config.Network.SmartRouting()
-	addressTranslator := internal.NewDefaultAddressTranslator()
+	smartRouting := config.NetworkConfig().IsSmartRouting()
+	addressTranslator := cluster.NewDefaultAddressTranslator()
 	addressProviders := []cluster.AddressProvider{
-		cluster.NewDefaultAddressProvider(config.Network),
+		cluster.NewDefaultAddressProvider(config.NetworkConfig()),
 	}
 	credentials := security.NewUsernamePasswordCredentials("", "")
 	clusterService := cluster.NewServiceImpl(addressProviders)
@@ -78,7 +74,7 @@ func NewImpl(name string, config Config) *Impl {
 		ClusterService:       clusterService,
 		PartitionService:     partitionService,
 		SerializationService: serializationService,
-		NetworkConfig:        config.Network,
+		NetworkConfig:        config.NetworkConfig(),
 		Credentials:          credentials,
 		ClientName:           name,
 	})
@@ -100,8 +96,8 @@ func NewImpl(name string, config Config) *Impl {
 	}
 	impl := &Impl{
 		name:              name,
-		clusterName:       config.ClusterName,
-		networkConfig:     &config.Network,
+		clusterName:       config.GroupConfig().Name(), //TODO this should be cluster name
+		networkConfig:     config.NetworkConfig(),
 		proxyManager:      proxy.NewManagerImpl(proxyManagerServiceBundle),
 		connectionManager: connectionManager,
 		//invocationService: invocationService,
@@ -115,9 +111,16 @@ func (c *Impl) Name() string {
 	return c.name
 }
 
-func (c *Impl) GetMap(name string) (proxy.Map, error) {
+func (c *Impl) GetMap(name string) (core.Map, error) {
 	c.ensureStarted()
 	return c.proxyManager.GetMap(name)
+}
+
+
+func (c *Impl) ensureStarted() {
+	if c.started.Load() == false {
+		panic("client not started")
+	}
 }
 
 func (c *Impl) Start() error {
@@ -130,12 +133,6 @@ func (c *Impl) Start() error {
 	}
 	c.started.Store(true)
 	return nil
-}
-
-func (c *Impl) ensureStarted() {
-	if c.started.Load() == false {
-		panic("client not started")
-	}
 }
 
 /*

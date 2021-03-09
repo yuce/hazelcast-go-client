@@ -14,7 +14,7 @@
 
 package projection
 
-import "github.com/hazelcast/hazelcast-go-client/v4/internal/serialization"
+import "github.com/hazelcast/hazelcast-go-client/v4/serialization"
 
 const FactoryID = -42
 

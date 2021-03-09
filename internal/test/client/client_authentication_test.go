@@ -18,9 +18,9 @@ import (
 	"testing"
 
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
-	"github.com/hazelcast/hazelcast-go-client/v4/internal/security"
-	"github.com/hazelcast/hazelcast-go-client/v4/internal/serialization"
-	"github.com/hazelcast/hazelcast-go-client/v4/internal/serialization/spi"
+	"github.com/hazelcast/hazelcast-go-client/v4/security"
+	"github.com/hazelcast/hazelcast-go-client/v4/serialization"
+	"github.com/hazelcast/hazelcast-go-client/v4/serialization/spi"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/test/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

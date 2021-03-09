@@ -6,7 +6,7 @@ import (
 )
 
 type Manager interface {
-	GetMap(name string) (Map, error)
+	GetMap(name string) (*MapImpl, error)
 	Remove(serviceName string, objectName string) error
 }
 
@@ -25,7 +25,7 @@ func NewManagerImpl(bundle ProxyCreationBundle) *ManagerImpl {
 	}
 }
 
-func (m *ManagerImpl) GetMap(objectName string) (Map, error) {
+func (m *ManagerImpl) GetMap(objectName string) (*MapImpl, error) {
 	if proxy, err := m.proxyFor(MapServiceName, objectName); err != nil {
 		return nil, err
 	} else {

@@ -3,7 +3,7 @@ package cluster_test
 import (
 	"errors"
 	"fmt"
-	"github.com/hazelcast/hazelcast-go-client/v4/internal/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/core"
 	"reflect"
 	"testing"
 )
