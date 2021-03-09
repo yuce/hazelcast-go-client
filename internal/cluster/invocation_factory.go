@@ -1,7 +1,7 @@
 package cluster
 
 import (
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/invocation"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 	"github.com/hazelcast/hazelcast-go-client/v4/serialization"
@@ -36,6 +36,6 @@ func (f ConnectionInvocationFactory) NewInvocationOnKeyOwner(message *proto.Clie
 	return f.NewInvocationOnPartitionOwner(message, partitionID)
 }
 
-func (f ConnectionInvocationFactory) NewInvocationOnTarget(message *proto.ClientMessage, address *core.Address) invocation.Invocation {
+func (f ConnectionInvocationFactory) NewInvocationOnTarget(message *proto.ClientMessage, address *hazelcast.Address) invocation.Invocation {
 	return invocation.NewImpl(message, -1, address, f.invocationTimeout)
 }

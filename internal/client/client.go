@@ -2,10 +2,10 @@ package client
 
 import (
 	"fmt"
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
     "github.com/hazelcast/hazelcast-go-client/v4/config"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/cluster"
-	"github.com/hazelcast/hazelcast-go-client/v4/core/logger"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/logger"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/invocation"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proxy"
 	"github.com/hazelcast/hazelcast-go-client/v4/security"
@@ -111,7 +111,7 @@ func (c *Impl) Name() string {
 	return c.name
 }
 
-func (c *Impl) GetMap(name string) (core.Map, error) {
+func (c *Impl) GetMap(name string) (hazelcast.Map, error) {
 	c.ensureStarted()
 	return c.proxyManager.GetMap(name)
 }

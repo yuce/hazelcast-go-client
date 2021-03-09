@@ -17,7 +17,7 @@ package loadbalancer
 import (
 	"testing"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/test/testutil"
 	"github.com/stretchr/testify/assert"
@@ -33,7 +33,7 @@ func TestRoundRobinLoadBalancer(t *testing.T) {
 	remoteController.StartMember(cluster.ID)
 
 	cfg := hazelcast.NewConfig()
-	lb := core.NewRoundRobinLoadBalancer()
+	lb := hazelcast.NewRoundRobinLoadBalancer()
 	cfg.SetLoadBalancer(lb)
 
 	client, err := hazelcast.NewClientWithConfig(cfg)
@@ -42,7 +42,7 @@ func TestRoundRobinLoadBalancer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	addressMp := make(map[core.Member]struct{})
+	addressMp := make(map[hazelcast.Member]struct{})
 	expected := len(client.Cluster().GetMembers())
 	for i := 0; i < expected; i++ {
 		addressMp[lb.Next()] = struct{}{}
@@ -61,7 +61,7 @@ func TestRoundRobinLoadBalancerOrder(t *testing.T) {
 	remoteController.StartMember(cluster.ID)
 
 	cfg := hazelcast.NewConfig()
-	lb := core.NewRoundRobinLoadBalancer()
+	lb := hazelcast.NewRoundRobinLoadBalancer()
 	cfg.SetLoadBalancer(lb)
 
 	client, err := hazelcast.NewClientWithConfig(cfg)

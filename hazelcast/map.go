@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core
+package hazelcast
 
 // Map is concurrent, distributed, observable and queryable.
 // This map is sync (blocking). Blocking calls return the value of the call and block

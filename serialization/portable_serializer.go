@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 )
 
 type PortableSerializer struct {
@@ -91,13 +91,13 @@ func (ps *PortableSerializer) ReadObject(input DataInput, factoryID int32, class
 func (ps *PortableSerializer) createNewPortableInstance(factoryID int32, classID int32) (Portable, error) {
 	factory := ps.factories[factoryID]
 	if factory == nil {
-		return nil, core.NewHazelcastSerializationError(fmt.Sprintf("there is no suitable portable factory for factory id: %d",
+		return nil, hazelcast.NewHazelcastSerializationError(fmt.Sprintf("there is no suitable portable factory for factory id: %d",
 			factoryID), nil)
 	}
 
 	portable := factory.Create(classID)
 	if portable == nil {
-		return nil, core.NewHazelcastSerializationError(fmt.Sprintf("%v is not able to create an instance for id: %d on factory id: %d",
+		return nil, hazelcast.NewHazelcastSerializationError(fmt.Sprintf("%v is not able to create an instance for id: %d on factory id: %d",
 			reflect.TypeOf(factory), classID, factoryID), nil)
 	}
 	return portable, nil

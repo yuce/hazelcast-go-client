@@ -19,7 +19,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 )
 
 func TestNilSerializer_Write(t *testing.T) {
@@ -119,7 +119,7 @@ func TestIdentifiedDataSerializableSerializer_NoInstanceCreated(t *testing.T) {
 	data, _ := service.ToData(c)
 	_, err := service.ToObject(data)
 
-	if _, ok := err.(*core.HazelcastSerializationError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastSerializationError); !ok {
 		t.Error("err should be 'factory is not able to create an instance for id: 2 on factory id: 4'")
 	}
 }
@@ -131,7 +131,7 @@ func TestIdentifiedDataSerializableSerializer_DataSerializable(t *testing.T) {
 	in := NewObjectDataInput(o.buffer, 0, nil, false)
 	_, err := serializer.Read(in)
 
-	if _, ok := err.(*core.HazelcastSerializationError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastSerializationError); !ok {
 		t.Error("IdentifiedDataSerializableSerializer Read() should return" +
 			" 'native clients do not support DataSerializable, please use IdentifiedDataSerializable'")
 	}
@@ -163,7 +163,7 @@ func TestIdentifiedDataSerializableSerializer_NoFactory(t *testing.T) {
 	in := NewObjectDataInput(o.buffer, 0, nil, false)
 	_, err := serializer.Read(in)
 
-	if _, ok := err.(*core.HazelcastSerializationError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastSerializationError); !ok {
 		t.Errorf("IdentifiedDataSerializableSerializer Read() should return '%v'",
 			fmt.Sprintf("there is no IdentifiedDataSerializable factory with id: %d", 1))
 	}

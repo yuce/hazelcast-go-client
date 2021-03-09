@@ -19,7 +19,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/rc"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/test/testutil"
@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var list core.List
+var list hazelcast.List
 var client hazelcast.Client
 var testElement = "testElement"
 
@@ -334,7 +334,7 @@ func TestListProxy_SetWithoutItem(t *testing.T) {
 
 func TestListProxy_AddItemListener_IllegalListener(t *testing.T) {
 	_, err := list.AddItemListener(5, true)
-	if _, ok := err.(*core.HazelcastIllegalArgumentError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastIllegalArgumentError); !ok {
 		t.Error("List.AddItemListener should return HazelcastIllegalArgumentError")
 	}
 }
@@ -417,15 +417,15 @@ func TestListProxy_AddItemItemRemovedListener(t *testing.T) {
 
 type itemListener struct {
 	wg    *sync.WaitGroup
-	event core.ItemEvent
+	event hazelcast.ItemEvent
 }
 
-func (l *itemListener) ItemAdded(event core.ItemEvent) {
+func (l *itemListener) ItemAdded(event hazelcast.ItemEvent) {
 	l.event = event
 	l.wg.Done()
 }
 
-func (l *itemListener) ItemRemoved(event core.ItemEvent) {
+func (l *itemListener) ItemRemoved(event hazelcast.ItemEvent) {
 	l.event = event
 	l.wg.Done()
 }

@@ -14,7 +14,7 @@
 package codec
 
 import (
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 )
 
@@ -39,7 +39,7 @@ const (
 // then the current thread becomes disabled for thread scheduling purposes
 // and lies dormant until other threads release enough permits.
 
-func EncodeSemaphoreAcquireRequest(groupId proto.RaftGroupId, name string, sessionId int64, threadId int64, invocationUid core.UUID, permits int32, timeoutMs int64) *proto.ClientMessage {
+func EncodeSemaphoreAcquireRequest(groupId proto.RaftGroupId, name string, sessionId int64, threadId int64, invocationUid hazelcast.UUID, permits int32, timeoutMs int64) *proto.ClientMessage {
 	clientMessage := proto.NewClientMessageForEncode()
 	clientMessage.SetRetryable(true)
 

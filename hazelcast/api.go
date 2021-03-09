@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package core provides core API interfaces/classes.
-package core
+package hazelcast
 
 import (
 	"encoding/json"
@@ -24,6 +24,71 @@ import (
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto/bufutil"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/util/nilutil"
 )
+
+// Client is a Hazelcast client.
+// Multiple Hazelcast clients can be created.
+// Each Hazelcast client has its own socket, goroutines.
+// Hazelcast client enables you to do all Hazelcast operations without
+// being a member of the cluster. It connects to one of the
+// cluster members and delegates all cluster wide operations to it.
+// When the connected cluster member dies, client will
+// automatically switch to another live member.
+type Client interface {
+    Start() error
+
+	// Name returns the name of this hazelcast client.
+	Name() string
+
+	// GetMap returns the distributed map instance with the specified name.
+	GetMap(name string) (Map, error)
+    //
+	// // GetList returns the distributed list instance with the specified name.
+	// GetList(name string) (hazelcast.List, error)
+    //
+	// // GetSet returns the distributed set instance with the specified name.
+	// GetSet(name string) (hazelcast.Set, error)
+    //
+	// // GetTopic returns the distributed topic instance with the specified name.
+	// GetTopic(name string) (hazelcast.Topic, error)
+    //
+	// // GetReliableTopic returns the distributed reliable topic instance with the specified name.
+	// GetReliableTopic(name string) (hazelcast.Topic, error)
+    //
+	// // GetMultiMap returns the distributed multi-map instance with the specified name.
+	// GetMultiMap(name string) (hazelcast.MultiMap, error)
+    //
+	// // GetReplicatedMap returns the replicated map instance with the specified name.
+	// GetReplicatedMap(name string) (hazelcast.ReplicatedMap, error)
+    //
+	// // GetQueue returns the distributed queue instance with the specified name.
+	// GetQueue(name string) (hazelcast.Queue, error)
+    //
+	// // GetRingbuffer returns the distributed ringbuffer instance with the specified name.
+	// GetRingbuffer(name string) (hazelcast.Ringbuffer, error)
+    //
+	// // GetPNCounter returns the distributed PN (Positive-Negative) CRDT counter instance with the specified name.
+	// GetPNCounter(name string) (hazelcast.PNCounter, error)
+    //
+	// // GetFlakeIDGenerator returns the distributed flakeIDGenerator instance with the specified name.
+	// GetFlakeIDGenerator(name string) (hazelcast.FlakeIDGenerator, error)
+    //
+	// // GetDistributedObject returns DistributedObject created by the service with the specified name.
+	// GetDistributedObject(serviceName string, name string) (hazelcast.DistributedObject, error)
+    //
+	// // Shutdown shuts down this Client.
+	// Shutdown()
+    //
+	// // Cluster returns the Cluster this instance is part of.
+	// // Cluster interface allows you to add listener for membership
+	// // events and learn more about the cluster this Hazelcast
+	// // instance is part of.
+	// Cluster() hazelcast.Cluster
+    //
+	// // LifecycleService returns the lifecycle service for this instance. LifecycleService service allows you
+	// // to listen for the lifecycle events.
+	// LifecycleService() hazelcast.LifecycleService
+}
+
 
 /*
 // Address represents an address of a member in the cluster.

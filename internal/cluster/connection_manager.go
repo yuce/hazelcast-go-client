@@ -3,9 +3,9 @@ package cluster
 import (
 	"errors"
 	"fmt"
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
     "github.com/hazelcast/hazelcast-go-client/v4/config"
-	"github.com/hazelcast/hazelcast-go-client/v4/core/logger"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/logger"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/invocation"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto/codec"
@@ -30,7 +30,7 @@ var ClientVersion = "4.0.0"
 type ConnectionManager interface {
 	AddListener(listener Listener)
 	NextConnectionID() int64
-	GetConnectionForAddress(addr *core.Address) *ConnectionImpl
+	GetConnectionForAddress(addr *hazelcast.Address) *ConnectionImpl
 	Start() error
 	notifyConnectionClosed(connection *ConnectionImpl, cause error)
 }
@@ -145,7 +145,7 @@ func (m *ConnectionManagerImpl) NextConnectionID() int64 {
 	return atomic.AddInt64(&m.nextConnectionID, 1)
 }
 
-func (m *ConnectionManagerImpl) GetConnectionForAddress(addr *core.Address) *ConnectionImpl {
+func (m *ConnectionManagerImpl) GetConnectionForAddress(addr *hazelcast.Address) *ConnectionImpl {
 	m.connectionsMu.RLock()
 	defer m.connectionsMu.RUnlock()
 	if conn, ok := m.connections[addr.String()]; ok {
@@ -165,12 +165,12 @@ func (m *ConnectionManagerImpl) connectCluster() error {
 	return errors.New("cannot connect to any adddress in the cluster")
 }
 
-func (m *ConnectionManagerImpl) connectAddr(addr *core.Address) error {
+func (m *ConnectionManagerImpl) connectAddr(addr *hazelcast.Address) error {
 	_, err := m.ensureConnection(addr, true)
 	return err
 }
 
-func (m *ConnectionManagerImpl) ensureConnection(addr *core.Address, owner bool) (*ConnectionImpl, error) {
+func (m *ConnectionManagerImpl) ensureConnection(addr *hazelcast.Address, owner bool) (*ConnectionImpl, error) {
 	if conn := m.getConnection(addr, owner); conn != nil {
 		return conn, nil
 	}
@@ -178,7 +178,7 @@ func (m *ConnectionManagerImpl) ensureConnection(addr *core.Address, owner bool)
 	return m.maybeCreateConnection(addr, owner)
 }
 
-func (m *ConnectionManagerImpl) getConnection(addr *core.Address, owner bool) *ConnectionImpl {
+func (m *ConnectionManagerImpl) getConnection(addr *hazelcast.Address, owner bool) *ConnectionImpl {
 	m.connectionsMu.RLock()
 	defer m.connectionsMu.RUnlock()
 	if conn, found := m.connections[addr.String()]; found {
@@ -187,14 +187,14 @@ func (m *ConnectionManagerImpl) getConnection(addr *core.Address, owner bool) *C
 	return nil
 }
 
-func (m *ConnectionManagerImpl) maybeCreateConnection(addr *core.Address, owner bool) (*ConnectionImpl, error) {
+func (m *ConnectionManagerImpl) maybeCreateConnection(addr *hazelcast.Address, owner bool) (*ConnectionImpl, error) {
 	//// check whether the connection exists before creating it
 	//if conn, found := m.connections[addr.String()]; found {
 	//	return conn, nil
 	//}
 	// TODO: check whether we can create a connection
 	if conn, err := m.createConnection(addr); err != nil {
-		return nil, core.NewHazelcastTargetDisconnectedError(err.Error(), err)
+		return nil, hazelcast.NewHazelcastTargetDisconnectedError(err.Error(), err)
 	} else if err = m.authenticate(conn, owner); err != nil {
 		return nil, err
 	} else {
@@ -205,7 +205,7 @@ func (m *ConnectionManagerImpl) maybeCreateConnection(addr *core.Address, owner 
 	}
 }
 
-func (m *ConnectionManagerImpl) createConnection(addr *core.Address) (*ConnectionImpl, error) {
+func (m *ConnectionManagerImpl) createConnection(addr *hazelcast.Address) (*ConnectionImpl, error) {
 	connection := m.createDefaultConnection()
 	if socket, err := connection.createSocket(m.networkConfig, addr); err != nil {
 		return nil, err
@@ -271,9 +271,9 @@ func (cm *ConnectionManagerImpl) processAuthenticationResult(connection *Connect
 			cm.logger.Info("Setting ", connection, " as owner.")
 		}
 	case credentialsFailed:
-		return core.NewHazelcastAuthenticationError("invalid credentials!", nil)
+		return hazelcast.NewHazelcastAuthenticationError("invalid credentials!", nil)
 	case serializationVersionMismatch:
-		return core.NewHazelcastAuthenticationError("serialization version mismatches with the server!", nil)
+		return hazelcast.NewHazelcastAuthenticationError("serialization version mismatches with the server!", nil)
 	}
 	return nil
 }
@@ -294,7 +294,7 @@ func (cm *ConnectionManagerImpl) createAuthenticationRequest(asOwner bool,
 		"dev",
 		"",
 		"",
-		core.NewUUID(),
+		hazelcast.NewUUID(),
 		proto.ClientType,
 		byte(serializationVersion),
 		ClientVersion,
@@ -327,9 +327,9 @@ func (cm *ConnectionManagerImpl) createCustomAuthenticationRequest(asOwner bool)
 //	clientUnregisteredMembers []*proto.Member)
 type AuthenticationDecoder func(clientMessage *proto.ClientMessage) (
 	status uint8,
-	address *core.Address,
-	uuid core.UUID,
-	ownerUuid core.UUID,
+	address *hazelcast.Address,
+	uuid hazelcast.UUID,
+	ownerUuid hazelcast.UUID,
 	serializationVersion uint8,
 	serverHazelcastVersion string,
 	partitionCount int32,
@@ -347,7 +347,7 @@ func (cm *ConnectionManagerImpl) getAuthenticationDecoder() AuthenticationDecode
 }
 
 func (m *ConnectionManagerImpl) notifyConnectionClosed(conn *ConnectionImpl, connErr error) {
-	if addr, ok := conn.endpoint.Load().(*core.Address); ok {
+	if addr, ok := conn.endpoint.Load().(*hazelcast.Address); ok {
 		// delete authenticated connection
 		m.connectionsMu.Lock()
 		delete(m.connections, addr.String())

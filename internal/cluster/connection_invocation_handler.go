@@ -2,8 +2,8 @@ package cluster
 
 import (
 	"github.com/hazelcast/hazelcast-go-client/v4/internal"
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
-	"github.com/hazelcast/hazelcast-go-client/v4/core/logger"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/logger"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/invocation"
 )
 
@@ -68,7 +68,7 @@ func (h ConnectionInvocationHandler) invokeNonSmart(inv invocation.Invocation) e
 	if boundInvocation, ok := inv.(ConnectionBoundInvocation); ok {
 		return h.sendToConnection(inv, boundInvocation.Connection())
 	} else if addr := h.clusterService.OwnerConnectionAddr(); addr == nil {
-		return core.NewHazelcastIOError("no address found to invoke", nil)
+		return hazelcast.NewHazelcastIOError("no address found to invoke", nil)
 	} else {
 		return h.sendToAddress(inv, addr)
 	}
@@ -76,13 +76,13 @@ func (h ConnectionInvocationHandler) invokeNonSmart(inv invocation.Invocation) e
 
 func (h ConnectionInvocationHandler) sendToConnection(inv invocation.Invocation, conn *ConnectionImpl) error {
 	if sent := conn.send(inv.Request()); !sent {
-		return core.NewHazelcastIOError("packet is not sent", nil)
+		return hazelcast.NewHazelcastIOError("packet is not sent", nil)
 	}
 	inv.StoreSentConnection(conn)
 	return nil
 }
 
-func (n ConnectionInvocationHandler) sendToAddress(inv invocation.Invocation, addr *core.Address) error {
+func (n ConnectionInvocationHandler) sendToAddress(inv invocation.Invocation, addr *hazelcast.Address) error {
 	if conn := n.connectionManager.GetConnectionForAddress(addr); conn == nil {
 		n.logger.Trace("Sending invocation to ", inv.Address(), " failed, address not found")
 		return internal.ErrAddressNotFound

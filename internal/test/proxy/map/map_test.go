@@ -23,8 +23,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
-	"github.com/hazelcast/hazelcast-go-client/v4/core/predicate"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/predicate"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto/bufutil"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/rc"
@@ -35,8 +35,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var mp core.Map
-var mp2 core.Map
+var mp hazelcast.Map
+var mp2 hazelcast.Map
 var client hazelcast.Client
 var member *rc.Member
 
@@ -871,39 +871,39 @@ func TestMapProxy_GetEntryViewWithNilKey(t *testing.T) {
 
 type entryListener struct {
 	wg       *sync.WaitGroup
-	event    core.EntryEvent
-	mapEvent core.MapEvent
+	event    hazelcast.EntryEvent
+	mapEvent hazelcast.MapEvent
 }
 
-func (l *entryListener) EntryAdded(event core.EntryEvent) {
+func (l *entryListener) EntryAdded(event hazelcast.EntryEvent) {
 	l.event = event
 	l.wg.Done()
 }
 
-func (l *entryListener) EntryUpdated(event core.EntryEvent) {
+func (l *entryListener) EntryUpdated(event hazelcast.EntryEvent) {
 	l.wg.Done()
 }
 
-func (l *entryListener) EntryRemoved(event core.EntryEvent) {
+func (l *entryListener) EntryRemoved(event hazelcast.EntryEvent) {
 	l.wg.Done()
 }
 
-func (l *entryListener) EntryEvicted(event core.EntryEvent) {
+func (l *entryListener) EntryEvicted(event hazelcast.EntryEvent) {
 	l.wg.Done()
 }
 
-func (l *entryListener) MapEvicted(event core.MapEvent) {
+func (l *entryListener) MapEvicted(event hazelcast.MapEvent) {
 	l.mapEvent = event
 	l.wg.Done()
 }
 
-func (l *entryListener) MapCleared(event core.MapEvent) {
+func (l *entryListener) MapCleared(event hazelcast.MapEvent) {
 	l.wg.Done()
 }
 
 func TestMapProxy_AddEntryListener_IllegalListener(t *testing.T) {
 	_, err := mp.AddEntryListener(5, true)
-	if _, ok := err.(*core.HazelcastIllegalArgumentError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastIllegalArgumentError); !ok {
 		t.Error("Map.AddEntryListener should return HazelcastIllegalArgumentError")
 	}
 }
@@ -922,13 +922,13 @@ func TestHazelcastJsonPut(t *testing.T) {
 	}
 
 	for _, currentPerson := range testCases {
-		value, _ := core.CreateHazelcastJSONValue(currentPerson)
+		value, _ := hazelcast.CreateHazelcastJSONValue(currentPerson)
 		_, err := mp.Put("key", value)
 		assert.NoError(t, err)
 		jsonValue, err := mp.Get("key")
 		assert.NoError(t, err)
 		var result person
-		jsonValue.(*core.HazelcastJSONValue).Unmarshal(&result)
+		jsonValue.(*hazelcast.HazelcastJSONValue).Unmarshal(&result)
 		assert.Equal(t, currentPerson.Age, result.Age)
 		assert.Equal(t, currentPerson.Name, result.Name)
 	}
@@ -1064,7 +1064,7 @@ func TestMapProxy_AddEntryListenerClear(t *testing.T) {
 
 func TestMapProxy_AddEntryListenerWithPredicate_IllegalListener(t *testing.T) {
 	_, err := mp.AddEntryListenerWithPredicate(5, nil, true)
-	if _, ok := err.(*core.HazelcastIllegalArgumentError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastIllegalArgumentError); !ok {
 		t.Error("Map.AddEntryListenerWithPredicate should return HazelcastIllegalArgumentError")
 	}
 }
@@ -1084,7 +1084,7 @@ func TestMapProxy_AddEntryListenerWithPredicate(t *testing.T) {
 
 func TestMapProxy_AddEntryListenerToKey_IllegalListener(t *testing.T) {
 	_, err := mp.AddEntryListenerToKeyWithPredicate(5, nil, nil, true)
-	if _, ok := err.(*core.HazelcastIllegalArgumentError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastIllegalArgumentError); !ok {
 		t.Error("Map.AddEntryListenerToKey should return HazelcastIllegalArgumentError")
 	}
 }
@@ -1108,7 +1108,7 @@ func TestMapProxy_AddEntryListenerToKey(t *testing.T) {
 
 func TestMapProxy_AddEntryListenerToKeyWithPredicate_IllegalListener(t *testing.T) {
 	_, err := mp.AddEntryListenerToKeyWithPredicate(5, nil, nil, true)
-	if _, ok := err.(*core.HazelcastIllegalArgumentError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastIllegalArgumentError); !ok {
 		t.Error("Map.AddEntryListenerToKeyWithPredicate should return HazelcastIllegalArgumentError")
 	}
 }

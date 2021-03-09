@@ -23,7 +23,7 @@ import (
 
 	"encoding/pem"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 )
 
 // SSLConfig is SSL configuration for client.
@@ -52,7 +52,7 @@ func (sc *SSLConfig) SetCaPath(path string) error {
 	}
 	caCertPool := x509.NewCertPool()
 	if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
-		return core.NewHazelcastIOError("error while loading the CA file, make sure the path exits and "+
+		return hazelcast.NewHazelcastIOError("error while loading the CA file, make sure the path exits and "+
 			"the format is pem", nil)
 	}
 

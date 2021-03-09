@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core
+package hazelcast
 
 // Set is the concurrent, distributed implementation of collection that contains no duplicate elements.
 // As implied by its name, this interface models the mathematical 'set' abstraction.

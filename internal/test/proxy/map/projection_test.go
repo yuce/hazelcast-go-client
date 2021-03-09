@@ -21,15 +21,15 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
-	"github.com/hazelcast/hazelcast-go-client/v4/core/predicate"
-	"github.com/hazelcast/hazelcast-go-client/v4/core/projection"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/predicate"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/projection"
 	"github.com/hazelcast/hazelcast-go-client/v4/serialization"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-var mp3 core.Map
+var mp3 hazelcast.Map
 
 func projectionTestInit() {
 	fillMapForProjections()
@@ -115,7 +115,7 @@ func TestProject_SingleAttribute(t *testing.T) {
 
 func TestProject_NilProjection(t *testing.T) {
 	_, err := mp3.Project(nil)
-	if _, ok := err.(*core.HazelcastNilPointerError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastNilPointerError); !ok {
 		t.Errorf("IMap.Project should return HazelcastNilPointerError")
 	}
 }
@@ -132,7 +132,7 @@ func TestProjectWithPredicate_SingleAttribute(t *testing.T) {
 func TestProjectWithPredicate_NilProjection(t *testing.T) {
 	predicate := predicate.GreaterEqual("age", int64(7))
 	_, err := mp3.ProjectWithPredicate(nil, predicate)
-	if _, ok := err.(*core.HazelcastNilPointerError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastNilPointerError); !ok {
 		t.Errorf("IMap.ProjectWithPredicate should return HazelcastNilPointerError")
 	}
 }
@@ -140,14 +140,14 @@ func TestProjectWithPredicate_NilProjection(t *testing.T) {
 func TestProjectWithPredicate_NilPredicate(t *testing.T) {
 	projection, _ := projection.SingleAttribute("age")
 	_, err := mp3.ProjectWithPredicate(projection, nil)
-	if _, ok := err.(*core.HazelcastNilPointerError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastNilPointerError); !ok {
 		t.Errorf("IMap.ProjectWithPredicate should return HazelcastNilPointerError")
 	}
 }
 
 func TestSingleAttribute_EmptyAttributePath(t *testing.T) {
 	_, err := projection.SingleAttribute("")
-	if _, ok := err.(*core.HazelcastIllegalArgumentError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastIllegalArgumentError); !ok {
 		t.Errorf("projection.SingleAttribute should return HazelcastIllegalArgumentError")
 	}
 }

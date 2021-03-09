@@ -14,7 +14,7 @@
 package codec
 
 import (
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 )
 
@@ -35,7 +35,7 @@ const (
 
 // Increases or decreases the number of permits by the given value.
 
-func EncodeSemaphoreChangeRequest(groupId proto.RaftGroupId, name string, sessionId int64, threadId int64, invocationUid core.UUID, permits int32) *proto.ClientMessage {
+func EncodeSemaphoreChangeRequest(groupId proto.RaftGroupId, name string, sessionId int64, threadId int64, invocationUid hazelcast.UUID, permits int32) *proto.ClientMessage {
 	clientMessage := proto.NewClientMessageForEncode()
 	clientMessage.SetRetryable(true)
 

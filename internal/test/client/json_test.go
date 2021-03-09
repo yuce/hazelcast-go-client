@@ -17,7 +17,7 @@ package client
 import (
 	"testing"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,12 +27,12 @@ type person struct {
 }
 
 func TestHazelcastJsonValue_Nil(t *testing.T) {
-	_, err := core.CreateHazelcastJSONValue(nil)
+	_, err := hazelcast.CreateHazelcastJSONValue(nil)
 	assert.Error(t, err)
 }
 
 func TestHazelcastJsonValue_Chan(t *testing.T) {
-	_, err := core.CreateHazelcastJSONValue(make(chan int))
+	_, err := hazelcast.CreateHazelcastJSONValue(make(chan int))
 	assert.Error(t, err)
 }
 
@@ -41,7 +41,7 @@ func TestHazelcastJsonValue_UnMarshalBack(t *testing.T) {
 		Age: 30, Name: "Name1",
 	}
 
-	value, err := core.CreateHazelcastJSONValue(expected)
+	value, err := hazelcast.CreateHazelcastJSONValue(expected)
 	assert.NoError(t, err)
 	var actual person
 	err = value.Unmarshal(&actual)

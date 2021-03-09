@@ -18,7 +18,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/test/testutil"
 	"github.com/stretchr/testify/assert"
@@ -46,11 +46,11 @@ func TestLifecycleListener(t *testing.T) {
 	client.Shutdown()
 	timeout := testutil.WaitTimeout(wg, testutil.Timeout)
 	assert.Equalf(t, false, timeout, "LifecycleService listener failed")
-	assert.Equalf(t, lifecycleListener.collector[0], core.LifecycleStateStarting, "LifecycleService listener failed")
-	assert.Equalf(t, lifecycleListener.collector[1], core.LifecycleStateConnected, "LifecycleService listener failed")
-	assert.Equalf(t, lifecycleListener.collector[2], core.LifecycleStateStarted, "LifecycleService listener failed")
-	assert.Equalf(t, lifecycleListener.collector[3], core.LifecycleStateShuttingDown, "LifecycleService listener failed")
-	assert.Equalf(t, lifecycleListener.collector[4], core.LifecycleStateShutdown, "LifecycleService listener failed")
+	assert.Equalf(t, lifecycleListener.collector[0], hazelcast.LifecycleStateStarting, "LifecycleService listener failed")
+	assert.Equalf(t, lifecycleListener.collector[1], hazelcast.LifecycleStateConnected, "LifecycleService listener failed")
+	assert.Equalf(t, lifecycleListener.collector[2], hazelcast.LifecycleStateStarted, "LifecycleService listener failed")
+	assert.Equalf(t, lifecycleListener.collector[3], hazelcast.LifecycleStateShuttingDown, "LifecycleService listener failed")
+	assert.Equalf(t, lifecycleListener.collector[4], hazelcast.LifecycleStateShutdown, "LifecycleService listener failed")
 	remoteController.ShutdownCluster(cluster.ID)
 }
 
@@ -67,7 +67,7 @@ func TestLifecycleListenerForDisconnected(t *testing.T) {
 	remoteController.ShutdownCluster(cluster.ID)
 	timeout := testutil.WaitTimeout(wg, testutil.Timeout)
 	assert.Equalf(t, false, timeout, "LifecycleService listener failed")
-	assert.Equalf(t, lifecycleListener.collector[0], core.LifecycleStateDisconnected, "LifecycleService listener failed")
+	assert.Equalf(t, lifecycleListener.collector[0], hazelcast.LifecycleStateDisconnected, "LifecycleService listener failed")
 	client.LifecycleService().RemoveLifecycleListener(registrationID)
 	client.Shutdown()
 }

@@ -17,14 +17,14 @@ package discovery
 import (
 	"time"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
-	"github.com/hazelcast/hazelcast-go-client/v4/core/logger"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/logger"
 )
 
 // HzCloudAddrTranslator is used to translate private addresses to public addresses.
 type HzCloudAddrTranslator struct {
 	cloudDiscovery  *HazelcastCloud
-	privateToPublic map[string]*core.Address
+	privateToPublic map[string]*hazelcast.Address
 	logger          logger.Logger
 }
 
@@ -49,7 +49,7 @@ func NewHzCloudAddrTranslatorWithCloudDisc(cloudDisc *HazelcastCloud, logger log
 }
 
 // Translate translates the given addr to its public address.
-func (at *HzCloudAddrTranslator) Translate(addr *core.Address) *core.Address {
+func (at *HzCloudAddrTranslator) Translate(addr *hazelcast.Address) *hazelcast.Address {
 	if addr == nil {
 		return nil
 	}

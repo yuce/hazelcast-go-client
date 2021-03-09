@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core
+package hazelcast
 
 // Ringbuffer is a data-structure where the content is stored in a ring like structure. A ringbuffer has a capacity so it
 // won't grow beyond that capacity and endanger the stability of the system. If that capacity is exceeded, than the oldest

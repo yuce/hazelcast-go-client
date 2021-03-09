@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core
+package hazelcast
 
 // HazelcastError is the general error interface.
 type HazelcastError interface {

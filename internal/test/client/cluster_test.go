@@ -25,7 +25,7 @@ import (
 
 	"github.com/hazelcast/hazelcast-go-client/v4/internal"
 	"github.com/hazelcast/hazelcast-go-client/v4/config"
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/test/testutil"
@@ -37,16 +37,16 @@ type membershipListener struct {
 	event atomic.Value
 }
 
-func (l *membershipListener) MemberAttributeChanged(event core.MemberAttributeEvent) {
+func (l *membershipListener) MemberAttributeChanged(event hazelcast.MemberAttributeEvent) {
 	l.wg.Done()
 	l.event.Store(event)
 }
 
-func (l *membershipListener) MemberAdded(member core.Member) {
+func (l *membershipListener) MemberAdded(member hazelcast.Member) {
 	l.wg.Done()
 }
 
-func (l *membershipListener) MemberRemoved(member core.Member) {
+func (l *membershipListener) MemberRemoved(member hazelcast.Member) {
 	l.wg.Done()
 }
 
@@ -136,11 +136,11 @@ func TestAddMembershipListenerMemberAttributeChanged(t *testing.T) {
 	assert.True(t, res.Success)
 	timeout := testutil.WaitTimeout(wg, testutil.Timeout)
 	assert.False(t, timeout)
-	event := listener.event.Load().(core.MemberAttributeEvent)
+	event := listener.event.Load().(hazelcast.MemberAttributeEvent)
 	assert.Equal(t, event.Key(), "test")
 	assert.Equal(t, event.Value(), "123")
 	assert.Equal(t, event.Member().UUID(), member.UUID)
-	assert.Equal(t, event.OperationType(), core.MemberAttributeOperationTypePut)
+	assert.Equal(t, event.OperationType(), hazelcast.MemberAttributeOperationTypePut)
 	client.Shutdown()
 	remoteController.ShutdownCluster(cluster.ID)
 }
@@ -215,7 +215,7 @@ func TestAuthenticationWithWrongCredentials(t *testing.T) {
 func TestClientWithoutMember(t *testing.T) {
 	cluster, _ = remoteController.CreateCluster("", testutil.DefaultServerConfig)
 	client, err := hazelcast.NewClient()
-	if _, ok := err.(*core.HazelcastIllegalStateError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastIllegalStateError); !ok {
 		t.Fatal("client should have returned a hazelcastError")
 	}
 	client.Shutdown()
@@ -235,12 +235,12 @@ func TestRestartMember(t *testing.T) {
 	remoteController.ShutdownMember(cluster.ID, member1.UUID)
 	timeout := testutil.WaitTimeout(wg, testutil.Timeout)
 	assert.Equalf(t, false, timeout, "clusterService reconnect has failed")
-	assert.Equalf(t, lifecycleListener.collector[0], core.LifecycleStateDisconnected, "clusterService reconnect has failed")
+	assert.Equalf(t, lifecycleListener.collector[0], hazelcast.LifecycleStateDisconnected, "clusterService reconnect has failed")
 	wg.Add(1)
 	remoteController.StartMember(cluster.ID)
 	timeout = testutil.WaitTimeout(wg, testutil.Timeout)
 	assert.Equalf(t, false, timeout, "clusterService reconnect has failed")
-	assert.Equalf(t, lifecycleListener.collector[1], core.LifecycleStateConnected, "clusterService reconnect has failed")
+	assert.Equalf(t, lifecycleListener.collector[1], hazelcast.LifecycleStateConnected, "clusterService reconnect has failed")
 	client.LifecycleService().RemoveLifecycleListener(registrationID)
 	client.Shutdown()
 	remoteController.ShutdownCluster(cluster.ID)
@@ -358,6 +358,6 @@ type mapListener struct {
 	wg *sync.WaitGroup
 }
 
-func (l *mapListener) EntryAdded(event core.EntryEvent) {
+func (l *mapListener) EntryAdded(event hazelcast.EntryEvent) {
 	l.wg.Done()
 }

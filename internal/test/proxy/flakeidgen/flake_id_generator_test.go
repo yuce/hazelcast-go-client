@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/hazelcast/hazelcast-go-client/v4/config"
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/rc"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/test/testutil"
@@ -31,7 +31,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var flakeIDGenerator core.FlakeIDGenerator
+var flakeIDGenerator hazelcast.FlakeIDGenerator
 var client hazelcast.Client
 
 const (
@@ -183,7 +183,7 @@ func TestFlakeIDGeneratorProxy_WhenAllMembersOutOfRangeThenError(t *testing.T) {
 	flakeIDGenerator, _ := client.GetFlakeIDGenerator("test")
 	_, err = flakeIDGenerator.NewID()
 	require.Errorf(t, err, "flakeIDGenerator should return an error when there is no server with a join id smaller than 2^16")
-	if _, ok := err.(core.HazelcastError); !ok {
+	if _, ok := err.(hazelcast.HazelcastError); !ok {
 		t.Fatal("HazelcastError is expected when there is no server with a join id smaller than 2^16")
 	}
 }

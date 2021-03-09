@@ -27,7 +27,7 @@ import (
 	"crypto/x509"
 
 	"github.com/hazelcast/hazelcast-go-client/v4/config/property"
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/util/iputil"
 )
 
@@ -38,7 +38,7 @@ const (
 var CloudURLBaseProperty = property.NewHazelcastPropertyString("hazelcast.client.cloud.url",
 	"https://coordinator.hazelcast.cloud")
 
-type nodeDiscoverer func() (map[string]*core.Address, error)
+type nodeDiscoverer func() (map[string]*hazelcast.Address, error)
 
 type addr struct {
 	PrivAddr   string `json:"private-address"`
@@ -68,22 +68,22 @@ func NewHazelcastCloud(endpointURL string, connectionTimeout time.Duration, cert
 	return hzCloud
 }
 
-func (hzC *HazelcastCloud) discoverNodesInternal() (map[string]*core.Address, error) {
+func (hzC *HazelcastCloud) discoverNodesInternal() (map[string]*hazelcast.Address, error) {
 	return hzC.callService()
 }
 
-func (hzC *HazelcastCloud) callService() (map[string]*core.Address, error) {
+func (hzC *HazelcastCloud) callService() (map[string]*hazelcast.Address, error) {
 	url := hzC.endPointURL
 	resp, err := hzC.client.Get(url)
 	if err != nil {
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, core.NewHazelcastIOError("got a status :"+resp.Status, nil)
+		return nil, hazelcast.NewHazelcastIOError("got a status :"+resp.Status, nil)
 	}
 	// Check certificates
 	if !hzC.checkCertificates(resp) {
-		return nil, core.NewHazelcastCertificateError("invalid certificate from hazelcast.cloud endpoint",
+		return nil, hazelcast.NewHazelcastCertificateError("invalid certificate from hazelcast.cloud endpoint",
 			nil)
 	}
 
@@ -102,9 +102,9 @@ func (hzC *HazelcastCloud) checkCertificates(response *http.Response) bool {
 	return true
 }
 
-func (hzC *HazelcastCloud) parseResponse(response *http.Response) (map[string]*core.Address, error) {
+func (hzC *HazelcastCloud) parseResponse(response *http.Response) (map[string]*hazelcast.Address, error) {
 	var target = make([]addr, 0)
-	var privateToPublicAddrs = make(map[string]*core.Address)
+	var privateToPublicAddrs = make(map[string]*hazelcast.Address)
 	resp, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		return nil, err
@@ -119,7 +119,7 @@ func (hzC *HazelcastCloud) parseResponse(response *http.Response) (map[string]*c
 		// TODO:: use addressProvider
 		privateAddress := hzC.createAddress(addr.PrivAddr)
 		if privateAddress.Port() == -1 {
-			privateAddress = core.NewAddressWithHostPort(addr.PrivAddr, publicAddress.Port())
+			privateAddress = hazelcast.NewAddressWithHostPort(addr.PrivAddr, publicAddress.Port())
 		}
 
 		privateToPublicAddrs[privateAddress.String()] = publicAddress
@@ -133,7 +133,7 @@ func CreateURLEndpoint(hazelcastProperties *property.HazelcastProperties, cloudT
 	return cloudBaseURL + cloudURLPath + cloudToken
 }
 
-func (hzC *HazelcastCloud) createAddress(hostname string) *core.Address {
+func (hzC *HazelcastCloud) createAddress(hostname string) *hazelcast.Address {
 	ip, port := iputil.GetIPAndPort(hostname)
-	return core.NewAddressWithHostPort(ip, port)
+	return hazelcast.NewAddressWithHostPort(ip, port)
 }

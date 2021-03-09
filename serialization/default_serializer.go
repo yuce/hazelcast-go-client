@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 )
 
 type NilSerializer struct{}
@@ -57,7 +57,7 @@ func (idss *IdentifiedDataSerializableSerializer) Read(input DataInput) (interfa
 		return nil, input.Error()
 	}
 	if !isIdentified {
-		return nil, core.NewHazelcastSerializationError("native clients do not support DataSerializable,"+
+		return nil, hazelcast.NewHazelcastSerializationError("native clients do not support DataSerializable,"+
 			" please use IdentifiedDataSerializable", nil)
 	}
 	factoryID := input.ReadInt32()
@@ -67,12 +67,12 @@ func (idss *IdentifiedDataSerializableSerializer) Read(input DataInput) (interfa
 	}
 	factory := idss.factories[factoryID]
 	if factory == nil {
-		return nil, core.NewHazelcastSerializationError(fmt.Sprintf("there is no IdentifiedDataSerializable factory with ID: %d",
+		return nil, hazelcast.NewHazelcastSerializationError(fmt.Sprintf("there is no IdentifiedDataSerializable factory with ID: %d",
 			factoryID), nil)
 	}
 	var object = factory.Create(classID)
 	if object == nil {
-		return nil, core.NewHazelcastSerializationError(fmt.Sprintf("%v is not able to create an instance for ID: %v on factory ID: %v",
+		return nil, hazelcast.NewHazelcastSerializationError(fmt.Sprintf("%v is not able to create an instance for ID: %v on factory ID: %v",
 			reflect.TypeOf(factory), classID, factoryID), nil)
 	}
 	err := object.ReadData(input)
@@ -430,11 +430,11 @@ func (*HazelcastJSONSerializer) ID() (id int32) {
 
 func (*HazelcastJSONSerializer) Read(input DataInput) (object interface{}, err error) {
 	obj := input.ReadUTF()
-	return core.CreateHazelcastJSONValueFromString(obj), input.Error()
+	return hazelcast.CreateHazelcastJSONValueFromString(obj), input.Error()
 }
 
 func (*HazelcastJSONSerializer) Write(output DataOutput, object interface{}) (err error) {
-	value := object.(*core.HazelcastJSONValue)
+	value := object.(*hazelcast.HazelcastJSONValue)
 	output.WriteUTF(value.ToString())
 	return nil
 }

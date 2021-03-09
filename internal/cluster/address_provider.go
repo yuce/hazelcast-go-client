@@ -1,7 +1,7 @@
 package cluster
 
 import (
-    "github.com/hazelcast/hazelcast-go-client/v4/core"
+    "github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
     "github.com/hazelcast/hazelcast-go-client/v4/config"
 ) 
 
@@ -17,7 +17,7 @@ func NewDefaultAddressProvider(networkConfig *config.NetworkConfig) *DefaultAddr
 	var err error
 	addresses := make([]*AddressImpl, len(networkConfig.Addresses()))
 	for i, addr := range networkConfig.Addresses() {
-		if addresses[i], err = core.ParseAddress(addr); err != nil {
+		if addresses[i], err = hazelcast.ParseAddress(addr); err != nil {
 			panic(err)
 		}
 	}

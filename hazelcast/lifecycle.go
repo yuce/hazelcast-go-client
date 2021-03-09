@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core
+package hazelcast
 
 const (
 	// LifecycleStateStarting is fired when the client is starting.

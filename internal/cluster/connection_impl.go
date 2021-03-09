@@ -24,8 +24,8 @@ import (
 	"crypto/tls"
 
 	"github.com/hazelcast/hazelcast-go-client/v4/config"
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
-	"github.com/hazelcast/hazelcast-go-client/v4/core/logger"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/logger"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/util/timeutil"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/util/versionutil"
@@ -68,7 +68,7 @@ func (c *ConnectionImpl) sendProtocolStarter() error {
 	return err
 }
 
-func (c *ConnectionImpl) createSocket(networkCfg *config.NetworkConfig, address *core.Address) (net.Conn, error) {
+func (c *ConnectionImpl) createSocket(networkCfg *config.NetworkConfig, address *hazelcast.Address) (net.Conn, error) {
 	conTimeout := timeutil.GetPositiveDurationOrMax(networkCfg.ConnectionTimeout())
 	socket, err := c.dialToAddressWithTimeout(address, conTimeout)
 	if err != nil {
@@ -80,7 +80,7 @@ func (c *ConnectionImpl) createSocket(networkCfg *config.NetworkConfig, address 
 	return socket, err
 }
 
-func (c *ConnectionImpl) dialToAddressWithTimeout(address *core.Address, conTimeout time.Duration) (net.Conn, error) {
+func (c *ConnectionImpl) dialToAddressWithTimeout(address *hazelcast.Address, conTimeout time.Duration) (net.Conn, error) {
 	return net.DialTimeout("tcp", address.String(), conTimeout)
 }
 
@@ -195,7 +195,7 @@ func (c *ConnectionImpl) close(err error) {
 	close(c.closed)
 	c.socket.Close()
 	c.closedTime.Store(time.Now())
-	c.connectionManager.notifyConnectionClosed(c, core.NewHazelcastTargetDisconnectedError(err.Error(), err))
+	c.connectionManager.notifyConnectionClosed(c, hazelcast.NewHazelcastTargetDisconnectedError(err.Error(), err))
 }
 
 func (c *ConnectionImpl) String() string {
@@ -207,7 +207,7 @@ func (c *ConnectionImpl) String() string {
 		", lastWriteTime=%s"+
 		", closedTime=%s"+
 		", connected server version=%s", c.isAlive(), c.connectionID,
-		c.endpoint.Load().(core.Address),
+		c.endpoint.Load().(hazelcast.Address),
 		c.lastRead.Load().(time.Time), c.lastWrite.Load().(time.Time),
 		c.closedTime.Load().(time.Time), c.connectedServerVersionStr)
 }

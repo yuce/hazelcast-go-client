@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/hazelcast/hazelcast-go-client/v4/config"
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 	"github.com/hazelcast/hazelcast-go-client/v4/serialization"
 	"github.com/hazelcast/hazelcast-go-client/v4/serialization/spi"
@@ -74,7 +74,7 @@ func (codecUtil) DecodeNullableForData(frameIterator *proto.ForwardFrameIterator
 	return DecodeData(frameIterator)
 }
 
-func (codecUtil) DecodeNullableForAddress(frameIterator *proto.ForwardFrameIterator) *core.Address {
+func (codecUtil) DecodeNullableForAddress(frameIterator *proto.ForwardFrameIterator) *hazelcast.Address {
 	if CodecUtil.NextFrameIsNullFrame(frameIterator) {
 		return nil
 	}
@@ -116,7 +116,7 @@ func (codecUtil) DecodeNullableForBitmapIndexOptions(frameIterator *proto.Forwar
 	return DecodeBitmapIndexOptions(frameIterator)
 }
 
-func (codecUtil) DecodeNullableForSimpleEntryView(frameIterator *proto.ForwardFrameIterator) *core.SimpleEntryView {
+func (codecUtil) DecodeNullableForSimpleEntryView(frameIterator *proto.ForwardFrameIterator) *hazelcast.SimpleEntryView {
 	isNullFrame := frameIterator.PeekNext().IsNullFrame()
 	if isNullFrame {
 		frameIterator.Next()
@@ -279,7 +279,7 @@ func EncodeEntryListUUIDLong(message *proto.ClientMessage, entries []proto.Pair)
 	content := make([]byte, size*proto.EntrySizeInBytes)
 	newFrame := proto.NewFrame(content)
 	for i, entry := range entries {
-		key := entry.Key().(core.UUID)
+		key := entry.Key().(hazelcast.UUID)
 		value := entry.Value().(int64)
 		FixSizedTypesCodec.EncodeUUID(content, int32(i*proto.EntrySizeInBytes), key)
 		FixSizedTypesCodec.EncodeLong(content, int32(i*proto.EntrySizeInBytes+proto.UUIDSizeInBytes), value)
@@ -326,11 +326,11 @@ func DecodeEntryListIntegerInteger(frameIterator *proto.ForwardFrameIterator) []
 
 func EncodeEntryListUUIDListInteger(message *proto.ClientMessage, entries []proto.Pair) {
 	entryCount := len(entries)
-	uuids := make([]core.UUID, entryCount)
+	uuids := make([]hazelcast.UUID, entryCount)
 	message.AddFrame(proto.BeginFrame)
 	for i := 0; i < entryCount; i++ {
 		entry := entries[i]
-		key := entry.Key().(core.UUID)
+		key := entry.Key().(hazelcast.UUID)
 		value := entry.Value().([]int32)
 		uuids[i] = key
 		EncodeListInteger(message, value)
@@ -415,7 +415,7 @@ func (fixSizedTypesCodec) DecodeByte(buffer []byte, offset int32) byte {
 	return buffer[offset]
 }
 
-func (fixSizedTypesCodec) EncodeUUID(buffer []byte, offset int32, uuid core.UUID) {
+func (fixSizedTypesCodec) EncodeUUID(buffer []byte, offset int32, uuid hazelcast.UUID) {
 	isNullEncode := uuid == nil
 	FixSizedTypesCodec.EncodeBoolean(buffer, offset, isNullEncode)
 	if isNullEncode {
@@ -426,7 +426,7 @@ func (fixSizedTypesCodec) EncodeUUID(buffer []byte, offset int32, uuid core.UUID
 	FixSizedTypesCodec.EncodeLong(buffer, bufferOffset+proto.LongSizeInBytes, int64(uuid.LeastSignificantBits()))
 }
 
-func (fixSizedTypesCodec) DecodeUUID(buffer []byte, offset int32) core.UUID {
+func (fixSizedTypesCodec) DecodeUUID(buffer []byte, offset int32) hazelcast.UUID {
 	isNull := FixSizedTypesCodec.DecodeBoolean(buffer, offset)
 	if isNull {
 		return nil
@@ -437,7 +437,7 @@ func (fixSizedTypesCodec) DecodeUUID(buffer []byte, offset int32) core.UUID {
 	mostSignificant := uint64(FixSizedTypesCodec.DecodeLong(buffer, mostSignificantOffset))
 	leastSignificant := uint64(FixSizedTypesCodec.DecodeLong(buffer, leastSignificantOffset))
 
-	return core.NewUUIDWith(mostSignificant, leastSignificant)
+	return hazelcast.NewUUIDWith(mostSignificant, leastSignificant)
 }
 
 func EncodeListInteger(message *proto.ClientMessage, entries []int32) {
@@ -613,7 +613,7 @@ func DecodeListData(frameIterator *proto.ForwardFrameIterator) []serialization.D
 	return DecodeListMultiFrameForData(frameIterator)
 }
 
-func EncodeListUUID(message *proto.ClientMessage, entries []core.UUID) {
+func EncodeListUUID(message *proto.ClientMessage, entries []hazelcast.UUID) {
 	itemCount := len(entries)
 	content := make([]byte, itemCount*proto.UUIDSizeInBytes)
 	newFrame := proto.NewFrame(content)
@@ -623,10 +623,10 @@ func EncodeListUUID(message *proto.ClientMessage, entries []core.UUID) {
 	message.AddFrame(newFrame)
 }
 
-func DecodeListUUID(frameIterator *proto.ForwardFrameIterator) []core.UUID {
+func DecodeListUUID(frameIterator *proto.ForwardFrameIterator) []hazelcast.UUID {
 	frame := frameIterator.Next()
 	itemCount := len(frame.Content) / proto.UUIDSizeInBytes
-	result := make([]core.UUID, itemCount)
+	result := make([]hazelcast.UUID, itemCount)
 	for i := 0; i < itemCount; i++ {
 		result[i] = FixSizedTypesCodec.DecodeUUID(frame.Content, int32(i*proto.UUIDSizeInBytes))
 	}
@@ -661,7 +661,7 @@ func EncodeMapForStringAndString(message *proto.ClientMessage, values map[string
 	message.AddFrame(proto.EndFrame.Copy())
 }
 
-func EncodeMapForEndpointQualifierAndAddress(message *proto.ClientMessage, values map[proto.EndpointQualifier]*core.Address) {
+func EncodeMapForEndpointQualifierAndAddress(message *proto.ClientMessage, values map[proto.EndpointQualifier]*hazelcast.Address) {
 	message.AddFrame(proto.BeginFrame.Copy())
 	for key, value := range values {
 		EncodeEndpointQualifier(message, key)
@@ -683,7 +683,7 @@ func DecodeMapForStringAndString(iterator *proto.ForwardFrameIterator) map[strin
 }
 
 func DecodeMapForEndpointQualifierAndAddress(iterator *proto.ForwardFrameIterator) interface{} {
-	result := map[proto.EndpointQualifier]*core.Address{}
+	result := map[proto.EndpointQualifier]*hazelcast.Address{}
 	iterator.Next()
 	for !iterator.PeekNext().IsEndFrame() {
 		key := DecodeEndpointQualifier(iterator)

@@ -14,7 +14,7 @@
 package codec
 
 import (
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 )
 
@@ -40,7 +40,7 @@ const (
 // If smart routing is disabled, the actual member processing the client
 // message may act as a proxy.
 
-func EncodePNCounterGetRequest(name string, replicaTimestamps []proto.Pair, targetReplicaUUID core.UUID) *proto.ClientMessage {
+func EncodePNCounterGetRequest(name string, replicaTimestamps []proto.Pair, targetReplicaUUID hazelcast.UUID) *proto.ClientMessage {
 	clientMessage := proto.NewClientMessageForEncode()
 	clientMessage.SetRetryable(true)
 

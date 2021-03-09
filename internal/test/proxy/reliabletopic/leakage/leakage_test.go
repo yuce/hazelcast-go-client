@@ -21,7 +21,7 @@ import (
 	"runtime"
 
 	"github.com/hazelcast/hazelcast-go-client/v4/internal"
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/rc"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/reliabletopic"
@@ -48,7 +48,7 @@ func TestReliableTopicProxy_Leakage(t *testing.T) {
 	reliableTopic, _ := client.GetReliableTopic("name")
 	topic := reliableTopic.(*internal.ReliableTopicProxy)
 	items := generateItems(client.(*internal.HazelcastClient), 20)
-	_, err := topic.Ringbuffer().AddAll(items, core.OverflowPolicyOverwrite)
+	_, err := topic.Ringbuffer().AddAll(items, hazelcast.OverflowPolicyOverwrite)
 	assert.NoError(t, err)
 	client.Shutdown()
 	testutil.AssertTrueEventually(t, func() bool {

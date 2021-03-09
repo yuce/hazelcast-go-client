@@ -19,7 +19,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 )
 
 type Service interface {
@@ -82,7 +82,7 @@ func (s *ServiceImpl) ToObject(data Data) (interface{}, error) {
 	}
 	serializer, ok := s.registry[typeID]
 	if !ok {
-		return nil, core.NewHazelcastSerializationError(fmt.Sprintf("there is no suitable de-serializer for type %d", typeID), nil)
+		return nil, hazelcast.NewHazelcastSerializationError(fmt.Sprintf("there is no suitable de-serializer for type %d", typeID), nil)
 	}
 	dataInput := NewObjectDataInput(data.Buffer(), DataOffset, s, s.serializationConfig.IsBigEndian())
 	return serializer.Read(dataInput)
@@ -129,7 +129,7 @@ func (s *ServiceImpl) FindSerializerFor(obj interface{}) (Serializer, error) {
 	}
 
 	if serializer == nil {
-		return nil, core.NewHazelcastSerializationError(fmt.Sprintf("there is no suitable serializer for %v", obj), nil)
+		return nil, hazelcast.NewHazelcastSerializationError(fmt.Sprintf("there is no suitable serializer for %v", obj), nil)
 	}
 	return serializer, nil
 }
@@ -194,7 +194,7 @@ func (s *ServiceImpl) registerDefaultSerializers() error {
 	s.nameToID["[]string"] = ConstantTypeStringArray
 
 	s.registerSerializer(&HazelcastJSONSerializer{})
-	s.nameToID[reflect.TypeOf(&core.HazelcastJSONValue{}).String()] = JSONSerializationType
+	s.nameToID[reflect.TypeOf(&hazelcast.HazelcastJSONValue{}).String()] = JSONSerializationType
 
 	s.registerSerializer(&GobSerializer{})
 	s.nameToID["!gob"] = GoGobSerializationType
@@ -222,7 +222,7 @@ func (s *ServiceImpl) registerCustomSerializers(customSerializers map[reflect.Ty
 
 func (s *ServiceImpl) registerSerializer(serializer Serializer) error {
 	if s.registry[serializer.ID()] != nil {
-		return core.NewHazelcastSerializationError("this serializer is already in the registry", nil)
+		return hazelcast.NewHazelcastSerializationError("this serializer is already in the registry", nil)
 	}
 	s.registry[serializer.ID()] = serializer
 	return nil

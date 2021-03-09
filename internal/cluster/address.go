@@ -1,5 +1,5 @@
 package cluster
 
-import "github.com/hazelcast/hazelcast-go-client/v4/core"
+import "github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 
-type AddressImpl = core.Address
+type AddressImpl = hazelcast.Address

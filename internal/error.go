@@ -17,18 +17,18 @@ package internal
 import (
 	"fmt"
     "errors"
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto/bufutil"
 )
 
 var ErrAddressNotFound = errors.New("address not found")
 
-func CreateHazelcastError(err *proto.ServerError) core.HazelcastError {
+func CreateHazelcastError(err *proto.ServerError) hazelcast.HazelcastError {
 	return createHazelcastError(err)
 }
 
-func createHazelcastError(err *proto.ServerError) core.HazelcastError {
+func createHazelcastError(err *proto.ServerError) hazelcast.HazelcastError {
 	stackTrace := ""
 	for _, trace := range err.StackTrace() {
 		stackTrace += fmt.Sprintf("\n %s.%s(%s:%d)", trace.DeclaringClass(), trace.MethodName(), trace.FileName(),
@@ -37,22 +37,22 @@ func createHazelcastError(err *proto.ServerError) core.HazelcastError {
 	message := fmt.Sprintf("got exception from server:\n %s: %s\n %s", err.ClassName(), err.Message(), stackTrace)
 	switch bufutil.ErrorCode(err.ErrorCode()) {
 	case bufutil.ErrorCodeAuthentication:
-		return core.NewHazelcastAuthenticationError(message, err)
+		return hazelcast.NewHazelcastAuthenticationError(message, err)
 	case bufutil.ErrorCodeHazelcastInstanceNotActive:
-		return core.NewHazelcastInstanceNotActiveError(message, err)
+		return hazelcast.NewHazelcastInstanceNotActiveError(message, err)
 	case bufutil.ErrorCodeHazelcastSerialization:
-		return core.NewHazelcastSerializationError(message, err)
+		return hazelcast.NewHazelcastSerializationError(message, err)
 	case bufutil.ErrorCodeTargetDisconnected:
-		return core.NewHazelcastTargetDisconnectedError(message, err)
+		return hazelcast.NewHazelcastTargetDisconnectedError(message, err)
 	case bufutil.ErrorCodeTargetNotMember:
-		return core.NewHazelcastTargetNotMemberError(message, err)
+		return hazelcast.NewHazelcastTargetNotMemberError(message, err)
 	case bufutil.ErrorCodeUnsupportedOperation:
-		return core.NewHazelcastUnsupportedOperationError(message, err)
+		return hazelcast.NewHazelcastUnsupportedOperationError(message, err)
 	case bufutil.ErrorCodeConsistencyLostException:
-		return core.NewHazelcastConsistencyLostError(message, err)
+		return hazelcast.NewHazelcastConsistencyLostError(message, err)
 	case bufutil.ErrorCodeIllegalArgument:
-		return core.NewHazelcastIllegalArgumentError(message, err)
+		return hazelcast.NewHazelcastIllegalArgumentError(message, err)
 	}
 
-	return core.NewHazelcastErrorType(message, err)
+	return hazelcast.NewHazelcastErrorType(message, err)
 }

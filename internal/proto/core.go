@@ -17,7 +17,7 @@ package proto
 import (
 	"bytes"
 	"fmt"
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"reflect"
 	"time"
 
@@ -32,23 +32,23 @@ type uuid struct {
 }
 
 type Member struct {
-	address      *core.Address
-	uuid         core.UUID
+	address      *hazelcast.Address
+	uuid         hazelcast.UUID
 	isLiteMember bool
 	attributes   map[string]string
 	version      MemberVersion
-	addressMap   map[EndpointQualifier]*core.Address
+	addressMap   map[EndpointQualifier]*hazelcast.Address
 }
 
-func NewMember(address *core.Address, uuid core.UUID, isLiteMember bool, attributes map[string]string, version MemberVersion, addressMap map[EndpointQualifier]*core.Address) *Member {
+func NewMember(address *hazelcast.Address, uuid hazelcast.UUID, isLiteMember bool, attributes map[string]string, version MemberVersion, addressMap map[EndpointQualifier]*hazelcast.Address) *Member {
 	return &Member{address: address, uuid: uuid, isLiteMember: isLiteMember, attributes: attributes, version: version, addressMap: addressMap}
 }
 
-func (m Member) Address() *core.Address {
+func (m Member) Address() *hazelcast.Address {
 	return m.address
 }
 
-func (m Member) UUID() core.UUID {
+func (m Member) UUID() hazelcast.UUID {
 	return m.uuid
 }
 
@@ -100,10 +100,10 @@ type MemberAttributeEvent struct {
 	operationType int32
 	key           string
 	value         string
-	member        core.Member
+	member        hazelcast.Member
 }
 
-func NewMemberAttributeEvent(operationType int32, key string, value string, member core.Member) *MemberAttributeEvent {
+func NewMemberAttributeEvent(operationType int32, key string, value string, member hazelcast.Member) *MemberAttributeEvent {
 	return &MemberAttributeEvent{
 		operationType: operationType,
 		key:           key,
@@ -124,7 +124,7 @@ func (m *MemberAttributeEvent) Value() string {
 	return m.value
 }
 
-func (m *MemberAttributeEvent) Member() core.Member {
+func (m *MemberAttributeEvent) Member() hazelcast.Member {
 	return m.member
 }
 
@@ -317,7 +317,7 @@ type ServerError struct {
 	errorCode      int32
 	className      string
 	message        string
-	stackTrace     []core.StackTraceElement
+	stackTrace     []hazelcast.StackTraceElement
 	causeErrorCode int32
 	causeClassName string
 }
@@ -338,8 +338,8 @@ func (e *ServerError) Message() string {
 	return e.message
 }
 
-func (e *ServerError) StackTrace() []core.StackTraceElement {
-	stackTrace := make([]core.StackTraceElement, len(e.stackTrace))
+func (e *ServerError) StackTrace() []hazelcast.StackTraceElement {
+	stackTrace := make([]hazelcast.StackTraceElement, len(e.stackTrace))
 	for i, v := range e.stackTrace {
 		stackTrace[i] = v
 	}
@@ -356,7 +356,7 @@ func (e *ServerError) CauseClassName() string {
 
 type AbstractMapEvent struct {
 	name      string
-	member    core.Member
+	member    hazelcast.Member
 	eventType int32
 }
 
@@ -364,7 +364,7 @@ func (e *AbstractMapEvent) Name() string {
 	return e.name
 }
 
-func (e *AbstractMapEvent) Member() core.Member {
+func (e *AbstractMapEvent) Member() hazelcast.Member {
 	return e.member
 }
 
@@ -385,7 +385,7 @@ type EntryEvent struct {
 	mergingValue interface{}
 }
 
-func NewEntryEvent(name string, member core.Member, eventType int32, key interface{}, value interface{},
+func NewEntryEvent(name string, member hazelcast.Member, eventType int32, key interface{}, value interface{},
 	oldValue interface{}, mergingValue interface{}) *EntryEvent {
 	return &EntryEvent{
 		AbstractMapEvent: &AbstractMapEvent{name, member, eventType},
@@ -417,7 +417,7 @@ type MapEvent struct {
 	numberOfAffectedEntries int32
 }
 
-func NewMapEvent(name string, member core.Member, eventType int32, numberOfAffectedEntries int32) core.MapEvent {
+func NewMapEvent(name string, member hazelcast.Member, eventType int32, numberOfAffectedEntries int32) hazelcast.MapEvent {
 	return &MapEvent{
 		AbstractMapEvent:        &AbstractMapEvent{name, member, eventType},
 		numberOfAffectedEntries: numberOfAffectedEntries,
@@ -436,10 +436,10 @@ type ItemEvent struct {
 	name      string
 	item      interface{}
 	eventType int32
-	member    core.Member
+	member    hazelcast.Member
 }
 
-func NewItemEvent(name string, item interface{}, eventType int32, member core.Member) core.ItemEvent {
+func NewItemEvent(name string, item interface{}, eventType int32, member hazelcast.Member) hazelcast.ItemEvent {
 	return &ItemEvent{
 		name:      name,
 		item:      item,
@@ -460,7 +460,7 @@ func (e *ItemEvent) EventType() int32 {
 	return e.eventType
 }
 
-func (e *ItemEvent) Member() core.Member {
+func (e *ItemEvent) Member() hazelcast.Member {
 	return e.member
 }
 
@@ -470,35 +470,35 @@ type EncodeListenerRemoveRequest func(registrationID string) *ClientMessage
 // Helper function to get flags for listeners
 func GetMapListenerFlags(listener interface{}) (int32, error) {
 	flags := int32(0)
-	if _, ok := listener.(core.EntryAddedListener); ok {
+	if _, ok := listener.(hazelcast.EntryAddedListener); ok {
 		flags |= bufutil.EntryEventAdded
 	}
-	if _, ok := listener.(core.EntryLoadedListener); ok {
+	if _, ok := listener.(hazelcast.EntryLoadedListener); ok {
 		flags |= bufutil.EntryEventLoaded
 	}
-	if _, ok := listener.(core.EntryRemovedListener); ok {
+	if _, ok := listener.(hazelcast.EntryRemovedListener); ok {
 		flags |= bufutil.EntryEventRemoved
 	}
-	if _, ok := listener.(core.EntryUpdatedListener); ok {
+	if _, ok := listener.(hazelcast.EntryUpdatedListener); ok {
 		flags |= bufutil.EntryEventUpdated
 	}
-	if _, ok := listener.(core.EntryEvictedListener); ok {
+	if _, ok := listener.(hazelcast.EntryEvictedListener); ok {
 		flags |= bufutil.EntryEventEvicted
 	}
-	if _, ok := listener.(core.MapEvictedListener); ok {
+	if _, ok := listener.(hazelcast.MapEvictedListener); ok {
 		flags |= bufutil.MapEventEvicted
 	}
-	if _, ok := listener.(core.MapClearedListener); ok {
+	if _, ok := listener.(hazelcast.MapClearedListener); ok {
 		flags |= bufutil.MapEventCleared
 	}
-	if _, ok := listener.(core.EntryExpiredListener); ok {
+	if _, ok := listener.(hazelcast.EntryExpiredListener); ok {
 		flags |= bufutil.EntryEventExpired
 	}
-	if _, ok := listener.(core.EntryMergedListener); ok {
+	if _, ok := listener.(hazelcast.EntryMergedListener); ok {
 		flags |= bufutil.EntryEventMerged
 	}
 	if flags == 0 {
-		return 0, core.NewHazelcastIllegalArgumentError(fmt.Sprintf("not a supported listener type: %v",
+		return 0, hazelcast.NewHazelcastIllegalArgumentError(fmt.Sprintf("not a supported listener type: %v",
 			reflect.TypeOf(listener)), nil)
 	}
 	return flags, nil
@@ -507,10 +507,10 @@ func GetMapListenerFlags(listener interface{}) (int32, error) {
 type TopicMessage struct {
 	messageObject    interface{}
 	publishTime      time.Time
-	publishingMember core.Member
+	publishingMember hazelcast.Member
 }
 
-func NewTopicMessage(messageObject interface{}, publishTime int64, publishingMember core.Member) *TopicMessage {
+func NewTopicMessage(messageObject interface{}, publishTime int64, publishingMember hazelcast.Member) *TopicMessage {
 	return &TopicMessage{
 		messageObject:    messageObject,
 		publishTime:      timeutil.ConvertMillisToUnixTime(publishTime),
@@ -526,7 +526,7 @@ func (m *TopicMessage) PublishTime() time.Time {
 	return m.publishTime
 }
 
-func (m *TopicMessage) PublishingMember() core.Member {
+func (m *TopicMessage) PublishingMember() hazelcast.Member {
 	return m.publishingMember
 }
 
@@ -556,10 +556,10 @@ func (memberVersion MemberVersion) Patch() byte {
 // MemberInfo represents a member in the cluster with its address, uuid, lite member status, attributes and version.
 type MemberInfo struct {
 	// address is proto.Address: Address of the member.
-	address *core.Address
+	address *hazelcast.Address
 
-	// uuid is core.UUID: UUID of the member.
-	uuid core.UUID
+	// uuid is hazelcast.UUID: UUID of the member.
+	uuid hazelcast.UUID
 
 	// liteMember represents member is a lite member. Lite members do not own any partition.
 	liteMember bool
@@ -567,27 +567,27 @@ type MemberInfo struct {
 	// attributes are configured attributes of the member
 	attributes map[string]string
 
-	// version is core.MemberVersion: Hazelcast codebase version of the member.
+	// version is hazelcast.MemberVersion: Hazelcast codebase version of the member.
 	version MemberVersion
 
 	// addressMap
-	addressMap map[EndpointQualifier]*core.Address
+	addressMap map[EndpointQualifier]*hazelcast.Address
 }
 
-func NewMemberInfo(address *core.Address, uuid core.UUID, attributes map[string]string, liteMember bool, version MemberVersion,
+func NewMemberInfo(address *hazelcast.Address, uuid hazelcast.UUID, attributes map[string]string, liteMember bool, version MemberVersion,
 	isAddressMapExists bool, addressMap interface{}) MemberInfo {
 	// TODO: Convert addressMap to map[EndpointQualifier]*Address
 	// copy address
 	addressCopy := *address
 	return MemberInfo{address: &addressCopy, uuid: uuid, attributes: attributes, liteMember: liteMember, version: version,
-		addressMap: addressMap.(map[EndpointQualifier]*core.Address)}
+		addressMap: addressMap.(map[EndpointQualifier]*hazelcast.Address)}
 }
 
-func (memberInfo MemberInfo) Address() *core.Address {
+func (memberInfo MemberInfo) Address() *hazelcast.Address {
 	return memberInfo.address
 }
 
-func (memberInfo MemberInfo) Uuid() core.UUID {
+func (memberInfo MemberInfo) Uuid() hazelcast.UUID {
 	return memberInfo.uuid
 }
 
@@ -603,7 +603,7 @@ func (memberInfo MemberInfo) Version() MemberVersion {
 	return memberInfo.version
 }
 
-func (memberInfo MemberInfo) AddressMap() map[EndpointQualifier]*core.Address {
+func (memberInfo MemberInfo) AddressMap() map[EndpointQualifier]*hazelcast.Address {
 	return memberInfo.addressMap
 }
 

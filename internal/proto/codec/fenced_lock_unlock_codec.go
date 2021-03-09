@@ -14,7 +14,7 @@
 package codec
 
 import (
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 )
 
@@ -38,7 +38,7 @@ const (
 // {@code LockOwnershipLostException}. Returns true if the lock is still
 // held by the caller after a successful unlock() call, false otherwise.
 
-func EncodeFencedLockUnlockRequest(groupId proto.RaftGroupId, name string, sessionId int64, threadId int64, invocationUid core.UUID) *proto.ClientMessage {
+func EncodeFencedLockUnlockRequest(groupId proto.RaftGroupId, name string, sessionId int64, threadId int64, invocationUid hazelcast.UUID) *proto.ClientMessage {
 	clientMessage := proto.NewClientMessageForEncode()
 	clientMessage.SetRetryable(true)
 

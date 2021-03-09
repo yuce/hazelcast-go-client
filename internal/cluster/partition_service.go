@@ -1,8 +1,8 @@
 package cluster
 
 import (
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
-	"github.com/hazelcast/hazelcast-go-client/v4/core/logger"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/logger"
 	"github.com/hazelcast/hazelcast-go-client/v4/serialization"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/util/murmur"
 	"sync/atomic"
@@ -12,7 +12,7 @@ type PartitionService interface {
 	PartitionCount() int32
 	GetPartitionID(keyData serialization.Data) int32
 	GetPartitionIDWithKey(key interface{}) (int32, error)
-	GetPartitionOwner(partitionId int32) core.UUID
+	GetPartitionOwner(partitionId int32) hazelcast.UUID
 }
 
 type PartitionServiceCreationBundle struct {
@@ -46,7 +46,7 @@ func NewPartitionServiceImpl(bundle PartitionServiceCreationBundle) *PartitionSe
 	return service
 }
 
-func (s *PartitionServiceImpl) GetPartitionOwner(partitionId int32) core.UUID {
+func (s *PartitionServiceImpl) GetPartitionOwner(partitionId int32) hazelcast.UUID {
 	return s.partitionTable.Load().(partitionTable).partitions[partitionId]
 }
 
@@ -61,7 +61,7 @@ func (s *PartitionServiceImpl) GetPartitionID(keyData serialization.Data) int32 
 		// We are initializing the partition count with the value coming from the server with authentication.
 		// This exception is used only for async mode client.
 		// TODO: panic
-		//core.NewHazelcastClientOfflineException()
+		//hazelcast.NewHazelcastClientOfflineException()
 		return 0
 	} else {
 		return murmur.HashToIndex(keyData.PartitionHash(), count)
@@ -83,17 +83,17 @@ func (s *PartitionServiceImpl) checkAndSetPartitionCount(newPartitionCount int32
 type partitionTable struct {
 	//connection           *connection.Impl
 	partitionStateVersion int32
-	partitions            map[int32]core.UUID
+	partitions            map[int32]hazelcast.UUID
 }
 
 func defaultPartitionTable() partitionTable {
-	//return partitionTable{nil, -1, map[int32]core.UUID{}}
+	//return partitionTable{nil, -1, map[int32]hazelcast.UUID{}}
 	return partitionTable{
 		partitionStateVersion: -1,
-		partitions:            map[int32]core.UUID{},
+		partitions:            map[int32]hazelcast.UUID{},
 	}
 }
 
-//func newPartitionTable(connection *connection.Impl, partitionSateVersion int32, partitions map[int32]core.UUID) partitionTable {
+//func newPartitionTable(connection *connection.Impl, partitionSateVersion int32, partitions map[int32]hazelcast.UUID) partitionTable {
 //	return partitionTable{connection: connection, partitionSateVersion: partitionSateVersion, partitions: partitions}
 //}

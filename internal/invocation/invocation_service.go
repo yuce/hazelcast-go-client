@@ -2,8 +2,8 @@ package invocation
 
 import (
 	"github.com/hazelcast/hazelcast-go-client/v4/internal"
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
-	"github.com/hazelcast/hazelcast-go-client/v4/core/logger"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/logger"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto/bufutil"
 	"sync"
@@ -32,7 +32,7 @@ type Service interface {
 	//InvokeOnPartitionOwner(message *proto.ClientMessage, partitionID int32) Result
 	//InvokeOnRandomTarget(message *proto.ClientMessage) Result
 	//InvokeOnKeyOwner(message *proto.ClientMessage, data serialization.Data) Result
-	//InvokeOnTarget(message *proto.ClientMessage, address *core.Address) Result
+	//InvokeOnTarget(message *proto.ClientMessage, address *hazelcast.Address) Result
 	//invokeOnConnection(message *proto.ClientMessage, connection *Connection) invocationResult
 	//CleanupConnection(connection *connection.Impl, connErr error)
 	//removeEventHandler(correlationID int64)
@@ -118,7 +118,7 @@ func (s *ServiceImpl) startProcess() {
 
 func (s *ServiceImpl) sendInvocation(invocation Invocation) Result {
 	if s.shutDown.Load() == true {
-		invocation.CompleteWithErr(core.NewHazelcastClientNotActiveError("client is shut down", nil))
+		invocation.CompleteWithErr(hazelcast.NewHazelcastClientNotActiveError("client is shut down", nil))
 	}
 	s.registerInvocation(invocation)
 	if err := s.handler.Invoke(invocation); err != nil {

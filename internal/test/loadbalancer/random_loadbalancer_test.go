@@ -18,7 +18,7 @@ import (
 	"log"
 	"testing"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/rc"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/test/testutil"
@@ -45,7 +45,7 @@ func TestRandomLoadBalancer(t *testing.T) {
 	remoteController.StartMember(cluster.ID)
 
 	cfg := hazelcast.NewConfig()
-	lb := core.NewRandomLoadBalancer()
+	lb := hazelcast.NewRandomLoadBalancer()
 	cfg.SetLoadBalancer(lb)
 
 	client, err := hazelcast.NewClientWithConfig(cfg)
@@ -54,7 +54,7 @@ func TestRandomLoadBalancer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	addressMp := make(map[core.Member]struct{})
+	addressMp := make(map[hazelcast.Member]struct{})
 	// Try 100 times with 2 members, the random loadbalancer should return either of the addresses at some point
 	// The chance of only returning of them with a functioning loadbalancer is approximately (1/2)^100,
 	// which is negligible.

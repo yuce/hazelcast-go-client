@@ -14,11 +14,11 @@
 
 package precond
 
-import "github.com/hazelcast/hazelcast-go-client/v4/core"
+import "github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 
 func CheckHasText(argument string, errorMessage string) (err error) {
 	if argument == "" {
-		err = core.NewHazelcastIllegalArgumentError(errorMessage, nil)
+		err = hazelcast.NewHazelcastIllegalArgumentError(errorMessage, nil)
 	}
 	return
 }

@@ -14,14 +14,14 @@
 
 package cluster
 
-import "github.com/hazelcast/hazelcast-go-client/v4/core"
+import "github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 
 // AddressTranslator is used to resolve private ip address of cloud services.
 type AddressTranslator interface {
 
 	// Translate translates the given address to another address specific
 	// to network or service
-	Translate(address *core.Address) *core.Address
+	Translate(address *hazelcast.Address) *hazelcast.Address
 }
 
 // defaultAddressTranslator is a no-op. It always returns the given address.
@@ -32,6 +32,6 @@ func NewDefaultAddressTranslator() *defaultAddressTranslator {
 	return &defaultAddressTranslator{}
 }
 
-func (dat *defaultAddressTranslator) Translate(address *core.Address) *core.Address {
+func (dat *defaultAddressTranslator) Translate(address *hazelcast.Address) *hazelcast.Address {
 	return address
 }

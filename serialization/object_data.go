@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"unicode/utf8"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto/bufutil"
 	"github.com/hazelcast/hazelcast-go-client/v4/serialization/bufferutil"
 )
@@ -300,10 +300,10 @@ func (i *ObjectDataInput) Available() int32 {
 
 func (i *ObjectDataInput) AssertAvailable(k int) error {
 	if i.position < 0 {
-		return core.NewHazelcastIllegalArgumentError(fmt.Sprintf("negative pos -> %v", i.position), nil)
+		return hazelcast.NewHazelcastIllegalArgumentError(fmt.Sprintf("negative pos -> %v", i.position), nil)
 	}
 	if len(i.buffer) < int(i.position)+k {
-		return core.NewHazelcastEOFError(fmt.Sprintf("cannot read %v bytes", k), nil)
+		return hazelcast.NewHazelcastEOFError(fmt.Sprintf("cannot read %v bytes", k), nil)
 	}
 	return nil
 }

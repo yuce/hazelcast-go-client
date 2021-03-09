@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/rc"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/test/testutil"
@@ -29,7 +29,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var multiMap core.MultiMap
+var multiMap hazelcast.MultiMap
 var client hazelcast.Client
 var testKey = "testKey"
 var testValue = "testValue"
@@ -311,7 +311,7 @@ func TestMultiMapProxy_EntrySet(t *testing.T) {
 
 func TestMultiMapProxy_AddEntryListener_IllegalListener(t *testing.T) {
 	_, err := multiMap.AddEntryListener(5, true)
-	if _, ok := err.(*core.HazelcastIllegalArgumentError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastIllegalArgumentError); !ok {
 		t.Error("MultiMap.AddEntryListener should return HazelcastIllegalArgumentError")
 	}
 }
@@ -337,7 +337,7 @@ func TestMultiMapProxy_AddEntryListenerAdded(t *testing.T) {
 
 func TestMultiMapProxy_AddEntryListenerToKey_IllegalListener(t *testing.T) {
 	_, err := multiMap.AddEntryListenerToKey(5, nil, true)
-	if _, ok := err.(*core.HazelcastIllegalArgumentError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastIllegalArgumentError); !ok {
 		t.Error("MultiMap.AddEntryListenerToKey should return HazelcastIllegalArgumentError")
 	}
 }
@@ -463,22 +463,22 @@ func TestMultiMapProxy_ForceUnlockWithNil(t *testing.T) {
 
 type EntryListener struct {
 	wg    *sync.WaitGroup
-	event core.EntryEvent
+	event hazelcast.EntryEvent
 }
 
-func (l *EntryListener) EntryAdded(event core.EntryEvent) {
+func (l *EntryListener) EntryAdded(event hazelcast.EntryEvent) {
 	l.event = event
 	l.wg.Done()
 }
 
-func (l *EntryListener) EntryRemoved(event core.EntryEvent) {
+func (l *EntryListener) EntryRemoved(event hazelcast.EntryEvent) {
 	l.wg.Done()
 }
 
-func (l *EntryListener) EntryEvicted(event core.EntryEvent) {
+func (l *EntryListener) EntryEvicted(event hazelcast.EntryEvent) {
 	l.wg.Done()
 }
 
-func (l *EntryListener) MapCleared(event core.MapEvent) {
+func (l *EntryListener) MapCleared(event hazelcast.MapEvent) {
 	l.wg.Done()
 }

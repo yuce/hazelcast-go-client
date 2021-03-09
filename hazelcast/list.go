@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core
+package hazelcast
 
 // List is a concurrent, distributed, ordered collection. The user of this
 // interface has precise control over where in the list each element is

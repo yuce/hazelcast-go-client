@@ -14,7 +14,7 @@
 package codec
 
 import (
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 	"github.com/hazelcast/hazelcast-go-client/v4/serialization"
 )
@@ -56,14 +56,14 @@ func EncodeReplicatedMapAddNearCacheEntryListenerRequest(name string, includeVal
 	return clientMessage
 }
 
-func DecodeReplicatedMapAddNearCacheEntryListenerResponse(clientMessage *proto.ClientMessage) core.UUID {
+func DecodeReplicatedMapAddNearCacheEntryListenerResponse(clientMessage *proto.ClientMessage) hazelcast.UUID {
 	frameIterator := clientMessage.FrameIterator()
 	initialFrame := frameIterator.Next()
 
 	return FixSizedTypesCodec.DecodeUUID(initialFrame.Content, ReplicatedMapAddNearCacheEntryListenerResponseResponseOffset)
 }
 
-func HandleReplicatedMapAddNearCacheEntryListener(clientMessage *proto.ClientMessage, handleEntryEvent func(key serialization.Data, value serialization.Data, oldValue serialization.Data, mergingValue serialization.Data, eventType int32, uuid core.UUID, numberOfAffectedEntries int32)) {
+func HandleReplicatedMapAddNearCacheEntryListener(clientMessage *proto.ClientMessage, handleEntryEvent func(key serialization.Data, value serialization.Data, oldValue serialization.Data, mergingValue serialization.Data, eventType int32, uuid hazelcast.UUID, numberOfAffectedEntries int32)) {
 	messageType := clientMessage.GetMessageType()
 	frameIterator := clientMessage.FrameIterator()
 	if messageType == ReplicatedMapAddNearCacheEntryListenerCodecEventEntryMessageType {

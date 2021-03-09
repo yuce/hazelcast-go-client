@@ -14,7 +14,7 @@
 package codec
 
 import (
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 )
 
@@ -30,7 +30,7 @@ const (
 
 // Fetches invalidation metadata from partitions of map.
 
-func EncodeMapFetchNearCacheInvalidationMetadataRequest(names []string, uuid core.UUID) *proto.ClientMessage {
+func EncodeMapFetchNearCacheInvalidationMetadataRequest(names []string, uuid hazelcast.UUID) *proto.ClientMessage {
 	clientMessage := proto.NewClientMessageForEncode()
 	clientMessage.SetRetryable(false)
 

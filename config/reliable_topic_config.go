@@ -14,7 +14,7 @@
 
 package config
 
-import "github.com/hazelcast/hazelcast-go-client/v4/core"
+import "github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 
 const (
 
@@ -22,14 +22,14 @@ const (
 	defaultReadBatchSize = 10
 
 	// defaultTopicOverloadPolicy is the default slow consumer policy.
-	defaultTopicOverloadPolicy = core.TopicOverLoadPolicyBlock
+	defaultTopicOverloadPolicy = hazelcast.TopicOverLoadPolicyBlock
 )
 
 // ReliableTopicConfig contains the ReliableTopic configuration for a client.
 type ReliableTopicConfig struct {
 	name                string
 	readBatchSize       int32
-	topicOverLoadPolicy core.TopicOverloadPolicy
+	topicOverLoadPolicy hazelcast.TopicOverloadPolicy
 }
 
 // NewReliableTopicConfig returns a ReliableTopicConfig with the given name.
@@ -53,12 +53,12 @@ func (r *ReliableTopicConfig) Name() string {
 }
 
 // TopicOverloadPolicy returns the TopicOverloadPolicy for this config.
-func (r *ReliableTopicConfig) TopicOverloadPolicy() core.TopicOverloadPolicy {
+func (r *ReliableTopicConfig) TopicOverloadPolicy() hazelcast.TopicOverloadPolicy {
 	return r.topicOverLoadPolicy
 }
 
 // SetTopicOverloadPolicy sets the TopicOverloadPolicy as the given TopicOverloadPolicy.
-func (r *ReliableTopicConfig) SetTopicOverloadPolicy(policy core.TopicOverloadPolicy) {
+func (r *ReliableTopicConfig) SetTopicOverloadPolicy(policy hazelcast.TopicOverloadPolicy) {
 	// TODO :: check NIL
 	r.topicOverLoadPolicy = policy
 }

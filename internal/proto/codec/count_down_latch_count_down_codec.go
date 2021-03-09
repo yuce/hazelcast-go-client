@@ -14,7 +14,7 @@
 package codec
 
 import (
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 )
 
@@ -35,7 +35,7 @@ const (
 // re-enabled for thread scheduling purposes, and Countdown owner is set to
 // null. If the current count equals zero, then nothing happens.
 
-func EncodeCountDownLatchCountDownRequest(groupId proto.RaftGroupId, name string, invocationUid core.UUID, expectedRound int32) *proto.ClientMessage {
+func EncodeCountDownLatchCountDownRequest(groupId proto.RaftGroupId, name string, invocationUid hazelcast.UUID, expectedRound int32) *proto.ClientMessage {
 	clientMessage := proto.NewClientMessageForEncode()
 	clientMessage.SetRetryable(true)
 

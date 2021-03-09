@@ -1,7 +1,7 @@
 package invocation
 
 import (
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 	"sync/atomic"
 	"time"
@@ -18,7 +18,7 @@ type Invocation interface {
 	GetWithTimeout(duration time.Duration) (*proto.ClientMessage, error)
 	PartitionID() int32
 	Request() *proto.ClientMessage
-	Address() *core.Address
+	Address() *hazelcast.Address
 	StoreSentConnection(conn interface{})
 }
 
@@ -27,14 +27,14 @@ type Impl struct {
 	response        chan interface{}
 	completed       int32
 	boundConnection *Impl
-	address         *core.Address
+	address         *hazelcast.Address
 	partitionID     int32
 	sentConnection  atomic.Value
 	eventHandler    func(clientMessage *proto.ClientMessage)
 	deadline        time.Time
 }
 
-func NewImpl(clientMessage *proto.ClientMessage, partitionID int32, address *core.Address,
+func NewImpl(clientMessage *proto.ClientMessage, partitionID int32, address *hazelcast.Address,
 	timeout time.Duration) *Impl {
 	inv := &Impl{
 		partitionID: partitionID,
@@ -74,7 +74,7 @@ func (i *Impl) GetWithTimeout(duration time.Duration) (*proto.ClientMessage, err
 		case response := <-i.response:
 			return i.unwrapResponse(response)
 		case <-time.After(duration):
-			return nil, core.NewHazelcastOperationTimeoutError("invocation timed out after "+duration.String(), nil)
+			return nil, hazelcast.NewHazelcastOperationTimeoutError("invocation timed out after "+duration.String(), nil)
 		}
 	}
 }
@@ -87,7 +87,7 @@ func (i Impl) Request() *proto.ClientMessage {
 	return i.request.Load().(*proto.ClientMessage)
 }
 
-func (i Impl) Address() *core.Address {
+func (i Impl) Address() *hazelcast.Address {
 	return i.address
 }
 

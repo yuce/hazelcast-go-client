@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/rc"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/test/testutil"
@@ -28,7 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var topic core.Topic
+var topic hazelcast.Topic
 var client hazelcast.Client
 
 func TestMain(m *testing.M) {
@@ -86,7 +86,7 @@ type topicMessageListener struct {
 	publishTime time.Time
 }
 
-func (l *topicMessageListener) OnMessage(message core.Message) error {
+func (l *topicMessageListener) OnMessage(message hazelcast.Message) error {
 	l.msg = message.MessageObject()
 	l.publishTime = message.PublishTime()
 	l.wg.Done()

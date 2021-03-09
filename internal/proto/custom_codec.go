@@ -14,17 +14,17 @@
 
 package proto
 
-import "github.com/hazelcast/hazelcast-go-client/v4/core"
+import "github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 
 /*
 Address Codec
 */
-func AddressCodecEncode(msg *ClientMessage, address *core.Address) {
+func AddressCodecEncode(msg *ClientMessage, address *hazelcast.Address) {
 	//TODO
 
 }
 
-func AddressCodecDecode(msg *ClientMessage) *core.Address {
+func AddressCodecDecode(msg *ClientMessage) *hazelcast.Address {
 	//TODO
 	return nil
 }
@@ -71,7 +71,7 @@ func ErrorCodecDecode(msg *ClientMessage) *ServerError {
 
 }
 
-func DecodeStackTrace(msg *ClientMessage) core.StackTraceElement {
+func DecodeStackTrace(msg *ClientMessage) hazelcast.StackTraceElement {
 	//TODO
 	return nil
 }

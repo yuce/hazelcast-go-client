@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core
+package hazelcast
 
 // Topic is a distribution mechanism for publishing messages that are delivered to multiple subscribers, which
 // is also known as a publish/subscribe (pub/sub) messaging model. Publish and subscriptions are cluster-wide. When a

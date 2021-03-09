@@ -26,7 +26,7 @@ import (
 	"sync"
 
 	"github.com/hazelcast/hazelcast-go-client/v4/config/property"
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/test/testutil"
 
@@ -193,7 +193,7 @@ func TestGetDistributedObjectWithNotRegisteredServiceName(t *testing.T) {
 	defer shutdownFunc()
 	serviceName := "InvalidServiceName"
 	_, err := client.GetDistributedObject(serviceName, "testName")
-	if _, ok := err.(*core.HazelcastClientServiceNotFoundError); ok {
+	if _, ok := err.(*hazelcast.HazelcastClientServiceNotFoundError); ok {
 		t.Error("HazelcastClientServiceNotFoundError expected got :", err)
 	}
 }
@@ -255,11 +255,11 @@ func TestHazelcastError_ServerError(t *testing.T) {
 	target := client.(*internal.HazelcastClient).ClusterService.GetMember(internal.GetCurrentTargetReplicaAddress(counter))
 	remoteController.TerminateMember(cluster.ID, target.UUID())
 	_, err = counter.Get()
-	if _, ok := err.(*core.HazelcastConsistencyLostError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastConsistencyLostError); !ok {
 		t.Fatal("PNCounter.Get should return HazelcastConsistencyLostError")
 	}
 
-	cErr, _ := err.(*core.HazelcastConsistencyLostError)
+	cErr, _ := err.(*hazelcast.HazelcastConsistencyLostError)
 	if cErr.ServerError() == nil {
 		t.Fatal("Server error should not be nil")
 	}

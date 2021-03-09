@@ -29,7 +29,7 @@ import (
 	"github.com/hazelcast/hazelcast-go-client/v4/internal"
 	"github.com/hazelcast/hazelcast-go-client/v4/config"
 	"github.com/hazelcast/hazelcast-go-client/v4/config/property"
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/rc"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/reliabletopic"
@@ -64,15 +64,15 @@ func createCluster() {
 func initConfig() *config.Config {
 	cfg := hazelcast.NewConfig()
 	reliableTopicCfg := config.NewReliableTopicConfig("discard")
-	reliableTopicCfg.SetTopicOverloadPolicy(core.TopicOverLoadPolicyDiscardNewest)
+	reliableTopicCfg.SetTopicOverloadPolicy(hazelcast.TopicOverLoadPolicyDiscardNewest)
 	cfg.AddReliableTopicConfig(reliableTopicCfg)
 
 	reliableTopicCfg2 := config.NewReliableTopicConfig("overwrite")
-	reliableTopicCfg2.SetTopicOverloadPolicy(core.TopicOverLoadPolicyDiscardOldest)
+	reliableTopicCfg2.SetTopicOverloadPolicy(hazelcast.TopicOverLoadPolicyDiscardOldest)
 	cfg.AddReliableTopicConfig(reliableTopicCfg2)
 
 	reliableTopicCfg3 := config.NewReliableTopicConfig("error")
-	reliableTopicCfg3.SetTopicOverloadPolicy(core.TopicOverLoadPolicyError)
+	reliableTopicCfg3.SetTopicOverloadPolicy(hazelcast.TopicOverLoadPolicyError)
 	cfg.AddReliableTopicConfig(reliableTopicCfg3)
 	return cfg
 }
@@ -285,7 +285,7 @@ func TestReliableTopicProxy_Discard(t *testing.T) {
 	reliableTopic, _ := client.GetReliableTopic("discard")
 	topic := reliableTopic.(*internal.ReliableTopicProxy)
 	items := generateItems(client.(*internal.HazelcastClient), 10)
-	topic.Ringbuffer().AddAll(items, core.OverflowPolicyFail)
+	topic.Ringbuffer().AddAll(items, hazelcast.OverflowPolicyFail)
 	topic.Publish(11)
 	seq, err := topic.Ringbuffer().TailSequence()
 	assert.NoError(t, err)
@@ -351,7 +351,7 @@ func TestReliableTopicProxy_Stale(t *testing.T) {
 	reliableTopic, _ := client.GetReliableTopic("stale")
 	topic := reliableTopic.(*internal.ReliableTopicProxy)
 	items := generateItems(client.(*internal.HazelcastClient), 20)
-	_, err := topic.Ringbuffer().AddAll(items, core.OverflowPolicyOverwrite)
+	_, err := topic.Ringbuffer().AddAll(items, hazelcast.OverflowPolicyOverwrite)
 	assert.NoError(t, err)
 	wg := new(sync.WaitGroup)
 	wg.Add(10)
@@ -412,14 +412,14 @@ type ReliableMessageListenerMock struct {
 	storedSeq      int64
 	isLossTolerant bool
 	wg             *sync.WaitGroup
-	messages       []core.Message
+	messages       []hazelcast.Message
 	err            error
 	isTerminal     bool
 	terminalErr    error
 	shouldSkip     bool
 }
 
-func (r *ReliableMessageListenerMock) OnMessage(message core.Message) error {
+func (r *ReliableMessageListenerMock) OnMessage(message hazelcast.Message) error {
 	r.messages = append(r.messages, message)
 	if !r.shouldSkip {
 		r.wg.Done()
@@ -447,7 +447,7 @@ type messageListenerMock struct {
 	wg *sync.WaitGroup
 }
 
-func (m *messageListenerMock) OnMessage(message core.Message) error {
+func (m *messageListenerMock) OnMessage(message hazelcast.Message) error {
 	m.wg.Done()
 	return nil
 }

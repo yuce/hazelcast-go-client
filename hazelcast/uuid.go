@@ -1,4 +1,4 @@
-package core
+package hazelcast
 
 import (
 	"crypto/rand"

@@ -22,7 +22,7 @@ import (
 
 	"github.com/hazelcast/hazelcast-go-client/v4/internal"
 	"github.com/hazelcast/hazelcast-go-client/v4/config/property"
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/test/testutil"
 	"github.com/stretchr/testify/assert"
@@ -80,7 +80,7 @@ func TestInvocationTimeout(t *testing.T) {
 	mp, _ := client.GetMap("testMap")
 	remoteController.ShutdownMember(cluster.ID, member1.UUID)
 	_, err := mp.Put("a", "b")
-	if _, ok := err.(*core.HazelcastOperationTimeoutError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastOperationTimeoutError); !ok {
 		t.Fatal("invocation should have timed out but returned, ", err)
 	}
 	client.Shutdown()
@@ -125,7 +125,7 @@ func TestInvocationWithShutdown(t *testing.T) {
 	mp, _ := client.GetMap("testMap")
 	client.Shutdown()
 	_, err := mp.Put("testingKey", "testingValue")
-	if _, ok := err.(*core.HazelcastClientNotActiveError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastClientNotActiveError); !ok {
 		t.Fatal("HazelcastClientNotActiveError was expected")
 	}
 	remoteController.ShutdownCluster(cluster.ID)

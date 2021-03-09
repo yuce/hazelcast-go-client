@@ -17,7 +17,7 @@ package internal
 import (
 	"fmt"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/core/logger"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/logger"
 )
 
 type hazelcastLogger struct {

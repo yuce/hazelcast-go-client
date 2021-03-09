@@ -14,7 +14,7 @@
 package codec
 
 import (
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 	"github.com/hazelcast/hazelcast-go-client/v4/serialization"
 )
@@ -59,14 +59,14 @@ func EncodeMapAddNearCacheInvalidationListenerRequest(name string, listenerFlags
 	return clientMessage
 }
 
-func DecodeMapAddNearCacheInvalidationListenerResponse(clientMessage *proto.ClientMessage) core.UUID {
+func DecodeMapAddNearCacheInvalidationListenerResponse(clientMessage *proto.ClientMessage) hazelcast.UUID {
 	frameIterator := clientMessage.FrameIterator()
 	initialFrame := frameIterator.Next()
 
 	return FixSizedTypesCodec.DecodeUUID(initialFrame.Content, MapAddNearCacheInvalidationListenerResponseResponseOffset)
 }
 
-func HandleMapAddNearCacheInvalidationListener(clientMessage *proto.ClientMessage, handleIMapInvalidationEvent func(key serialization.Data, sourceUuid core.UUID, partitionUuid core.UUID, sequence int64), handleIMapBatchInvalidationEvent func(keys []serialization.Data, sourceUuids []core.UUID, partitionUuids []core.UUID, sequences []int64)) {
+func HandleMapAddNearCacheInvalidationListener(clientMessage *proto.ClientMessage, handleIMapInvalidationEvent func(key serialization.Data, sourceUuid hazelcast.UUID, partitionUuid hazelcast.UUID, sequence int64), handleIMapBatchInvalidationEvent func(keys []serialization.Data, sourceUuids []hazelcast.UUID, partitionUuids []hazelcast.UUID, sequences []int64)) {
 	messageType := clientMessage.GetMessageType()
 	frameIterator := clientMessage.FrameIterator()
 	if messageType == MapAddNearCacheInvalidationListenerCodecEventIMapInvalidationMessageType {

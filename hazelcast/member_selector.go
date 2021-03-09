@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core
+package hazelcast
 
 // MemberSelector is an interface for implementations selecting members
 // that are capable of executing a special kind of task.

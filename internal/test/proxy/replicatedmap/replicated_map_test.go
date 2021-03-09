@@ -23,8 +23,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
-	"github.com/hazelcast/hazelcast-go-client/v4/core/predicate"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/predicate"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/rc"
@@ -33,7 +33,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var rmp core.ReplicatedMap
+var rmp hazelcast.ReplicatedMap
 var client hazelcast.Client
 
 func TestMain(m *testing.M) {
@@ -359,7 +359,7 @@ func TestReplicatedMapProxy_EntrySet(t *testing.T) {
 
 func TestReplicatedMapProxy_AddEntryListener_IllegalListener(t *testing.T) {
 	_, err := rmp.AddEntryListener(5)
-	if _, ok := err.(*core.HazelcastIllegalArgumentError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastIllegalArgumentError); !ok {
 		t.Error("ReplicatedMap.AddEntryListener should return HazelcastIllegalArgumentError")
 	}
 }
@@ -384,7 +384,7 @@ func TestReplicatedMapProxy_AddEntryListener(t *testing.T) {
 
 func TestReplicatedMapProxy_AddEntryListenerWithPredicate_IllegalListener(t *testing.T) {
 	_, err := rmp.AddEntryListenerWithPredicate(5, nil)
-	if _, ok := err.(*core.HazelcastIllegalArgumentError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastIllegalArgumentError); !ok {
 		t.Error("ReplicatedMap.AddEntryListenerWithPredicate should return HazelcastIllegalArgumentError")
 	}
 }
@@ -409,7 +409,7 @@ func TestReplicatedMapProxy_AddEntryListenerWithPredicate(t *testing.T) {
 
 func TestReplicatedMapProxy_AddEntryListenerToKey_IllegalListener(t *testing.T) {
 	_, err := rmp.AddEntryListenerToKey(5, nil)
-	if _, ok := err.(*core.HazelcastIllegalArgumentError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastIllegalArgumentError); !ok {
 		t.Error("ReplicatedMap.AddEntryListenerToKey should return HazelcastIllegalArgumentError")
 	}
 }
@@ -438,7 +438,7 @@ func TestReplicatedMapProxy_AddEntryListenerToKey(t *testing.T) {
 
 func TestReplicatedMapProxy_AddEntryListenerToKeyWithPredicate_IllegalListener(t *testing.T) {
 	_, err := rmp.AddEntryListenerToKeyWithPredicate(5, nil, nil)
-	if _, ok := err.(*core.HazelcastIllegalArgumentError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastIllegalArgumentError); !ok {
 		t.Error("ReplicatedMap.AddEntryListenerToKeyWithPredicate should return HazelcastIllegalArgumentError")
 	}
 }
@@ -471,26 +471,26 @@ func TestReplicatedMapProxy_AddEntryListenerToKeyWithPredicate(t *testing.T) {
 
 type entryListener struct {
 	wg    *sync.WaitGroup
-	event core.EntryEvent
+	event hazelcast.EntryEvent
 }
 
-func (l *entryListener) EntryAdded(event core.EntryEvent) {
+func (l *entryListener) EntryAdded(event hazelcast.EntryEvent) {
 	l.event = event
 	l.wg.Done()
 }
 
-func (l *entryListener) EntryUpdated(event core.EntryEvent) {
+func (l *entryListener) EntryUpdated(event hazelcast.EntryEvent) {
 	l.wg.Done()
 }
 
-func (l *entryListener) EntryRemoved(event core.EntryEvent) {
+func (l *entryListener) EntryRemoved(event hazelcast.EntryEvent) {
 	l.wg.Done()
 }
 
-func (l *entryListener) EntryEvicted(event core.EntryEvent) {
+func (l *entryListener) EntryEvicted(event hazelcast.EntryEvent) {
 	l.wg.Done()
 }
 
-func (l *entryListener) MapCleared(event core.MapEvent) {
+func (l *entryListener) MapCleared(event hazelcast.MapEvent) {
 	l.wg.Done()
 }

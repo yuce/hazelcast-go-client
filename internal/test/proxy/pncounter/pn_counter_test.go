@@ -21,8 +21,8 @@ import (
 
 	"github.com/hazelcast/hazelcast-go-client/v4/internal"
 	"github.com/hazelcast/hazelcast-go-client/v4/config/property"
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
-	"github.com/hazelcast/hazelcast-go-client/v4/core/logger"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/logger"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto/bufutil"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/rc"
@@ -31,7 +31,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var counter core.PNCounter
+var counter hazelcast.PNCounter
 var client hazelcast.Client
 
 const counterName = "myPNCounter"
@@ -212,7 +212,7 @@ func TestPNCounter_HazelcastNoDataMemberInClusterError(t *testing.T) {
 	counter, _ = client.GetPNCounter(counterName)
 	var delta int64 = 5
 	_, err = counter.AddAndGet(delta)
-	if _, ok := err.(*core.HazelcastNoDataMemberInClusterError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastNoDataMemberInClusterError); !ok {
 		t.Error("PNCounter.AddAndGet should return HazelcastNoDataMemberInClusterError")
 	}
 }
@@ -234,7 +234,7 @@ func TestPNCounter_HazelcastConsistencyLostError(t *testing.T) {
 	target := client.(*internal.HazelcastClient).ClusterService.GetMember(internal.GetCurrentTargetReplicaAddress(counter))
 	remoteController.TerminateMember(cluster.ID, target.UUID())
 	_, err = counter.Get()
-	if _, ok := err.(*core.HazelcastConsistencyLostError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastConsistencyLostError); !ok {
 		t.Error("PNCounter.Get should return HazelcastConsistencyLostError")
 	}
 }

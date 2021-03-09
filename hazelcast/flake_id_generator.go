@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core
+package hazelcast
 
 // FlakeIDGenerator is a cluster-wide unique ID generator. Generated IDs are 'int64' primitive values
 // and are k-ordered (roughly ordered). IDs are in the range from `0` to `math.MaxInt64`.

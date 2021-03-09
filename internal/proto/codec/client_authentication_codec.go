@@ -14,7 +14,7 @@
 package codec
 
 import (
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 )
 
@@ -38,7 +38,7 @@ const (
 
 // Makes an authentication request to the cluster.
 
-func EncodeClientAuthenticationRequest(clusterName string, username string, password string, uuid core.UUID, clientType string, serializationVersion byte, clientHazelcastVersion string, clientName string, labels []string) *proto.ClientMessage {
+func EncodeClientAuthenticationRequest(clusterName string, username string, password string, uuid hazelcast.UUID, clientType string, serializationVersion byte, clientHazelcastVersion string, clientName string, labels []string) *proto.ClientMessage {
 	clientMessage := proto.NewClientMessageForEncode()
 	clientMessage.SetRetryable(true)
 
@@ -60,7 +60,7 @@ func EncodeClientAuthenticationRequest(clusterName string, username string, pass
 	return clientMessage
 }
 
-func DecodeClientAuthenticationResponse(clientMessage *proto.ClientMessage) (status byte, address *core.Address, memberUuid core.UUID, serializationVersion byte, serverHazelcastVersion string, partitionCount int32, clusterId core.UUID, failoverSupported bool) {
+func DecodeClientAuthenticationResponse(clientMessage *proto.ClientMessage) (status byte, address *hazelcast.Address, memberUuid hazelcast.UUID, serializationVersion byte, serverHazelcastVersion string, partitionCount int32, clusterId hazelcast.UUID, failoverSupported bool) {
 	frameIterator := clientMessage.FrameIterator()
 	initialFrame := frameIterator.Next()
 

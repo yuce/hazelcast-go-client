@@ -21,7 +21,7 @@ import (
 	"github.com/hazelcast/hazelcast-go-client/v4/serialization/spi"
 	"reflect"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto/bufutil"
 	"github.com/hazelcast/hazelcast-go-client/v4/serialization"
@@ -123,7 +123,7 @@ func (p *Impl) ServiceName() string {
 
 func (p *Impl) validateAndSerialize(arg1 interface{}) (arg1Data serialization.Data, err error) {
 	if nilutil.IsNil(arg1) {
-		return nil, core.NewHazelcastNilPointerError(bufutil.NilArgIsNotAllowed, nil)
+		return nil, hazelcast.NewHazelcastNilPointerError(bufutil.NilArgIsNotAllowed, nil)
 	}
 	arg1Data, err = p.toData(arg1)
 	return
@@ -132,7 +132,7 @@ func (p *Impl) validateAndSerialize(arg1 interface{}) (arg1Data serialization.Da
 func (p *Impl) validateAndSerialize2(arg1 interface{}, arg2 interface{}) (arg1Data serialization.Data,
 	arg2Data serialization.Data, err error) {
 	if nilutil.IsNil(arg1) || nilutil.IsNil(arg2) {
-		return nil, nil, core.NewHazelcastNilPointerError(bufutil.NilArgIsNotAllowed, nil)
+		return nil, nil, hazelcast.NewHazelcastNilPointerError(bufutil.NilArgIsNotAllowed, nil)
 	}
 	arg1Data, err = p.toData(arg1)
 	if err != nil {
@@ -145,7 +145,7 @@ func (p *Impl) validateAndSerialize2(arg1 interface{}, arg2 interface{}) (arg1Da
 func (p *Impl) validateAndSerialize3(arg1 interface{}, arg2 interface{}, arg3 interface{}) (arg1Data serialization.Data,
 	arg2Data serialization.Data, arg3Data serialization.Data, err error) {
 	if nilutil.IsNil(arg1) || nilutil.IsNil(arg2) || nilutil.IsNil(arg3) {
-		return nil, nil, nil, core.NewHazelcastNilPointerError(bufutil.NilArgIsNotAllowed, nil)
+		return nil, nil, nil, hazelcast.NewHazelcastNilPointerError(bufutil.NilArgIsNotAllowed, nil)
 	}
 	arg1Data, err = p.toData(arg1)
 	if err != nil {
@@ -161,7 +161,7 @@ func (p *Impl) validateAndSerialize3(arg1 interface{}, arg2 interface{}, arg3 in
 
 func (p *Impl) validateAndSerializePredicate(arg1 interface{}) (arg1Data serialization.Data, err error) {
 	if nilutil.IsNil(arg1) {
-		return nil, core.NewHazelcastSerializationError(bufutil.NilPredicateIsNotAllowed, nil)
+		return nil, hazelcast.NewHazelcastSerializationError(bufutil.NilPredicateIsNotAllowed, nil)
 	}
 	arg1Data, err = p.toData(arg1)
 	return
@@ -169,7 +169,7 @@ func (p *Impl) validateAndSerializePredicate(arg1 interface{}) (arg1Data seriali
 
 func (p *Impl) validateAndSerializeSlice(elements []interface{}) (elementsData []serialization.Data, err error) {
 	if elements == nil {
-		return nil, core.NewHazelcastSerializationError(bufutil.NilSliceIsNotAllowed, nil)
+		return nil, hazelcast.NewHazelcastSerializationError(bufutil.NilSliceIsNotAllowed, nil)
 	}
 	elementsData, err = colutil.ObjectToDataCollection(elements, p.serializationService)
 	return
@@ -177,33 +177,33 @@ func (p *Impl) validateAndSerializeSlice(elements []interface{}) (elementsData [
 
 func (p *Impl) validateItemListener(listener interface{}) (err error) {
 	switch listener.(type) {
-	case core.ItemAddedListener:
-	case core.ItemRemovedListener:
+	case hazelcast.ItemAddedListener:
+	case hazelcast.ItemRemovedListener:
 	default:
-		return core.NewHazelcastIllegalArgumentError("listener argument type must be one of ItemAddedListener,"+
+		return hazelcast.NewHazelcastIllegalArgumentError("listener argument type must be one of ItemAddedListener,"+
 			" ItemRemovedListener", nil)
 	}
 	return nil
 }
 
 func (p *Impl) validateEntryListener(listener interface{}) (err error) {
-	argErr := core.NewHazelcastIllegalArgumentError(fmt.Sprintf("not a supported listener type: %v",
+	argErr := hazelcast.NewHazelcastIllegalArgumentError(fmt.Sprintf("not a supported listener type: %v",
 		reflect.TypeOf(listener)), nil)
 	if p.serviceName == bufutil.ServiceNameReplicatedMap {
 		switch listener.(type) {
-		case core.EntryAddedListener:
-		case core.EntryRemovedListener:
-		case core.EntryUpdatedListener:
-		case core.EntryEvictedListener:
-		case core.MapClearedListener:
+		case hazelcast.EntryAddedListener:
+		case hazelcast.EntryRemovedListener:
+		case hazelcast.EntryUpdatedListener:
+		case hazelcast.EntryEvictedListener:
+		case hazelcast.MapClearedListener:
 		default:
 			err = argErr
 		}
 	} else if p.serviceName == bufutil.ServiceNameMultiMap {
 		switch listener.(type) {
-		case core.EntryAddedListener:
-		case core.EntryRemovedListener:
-		case core.MapClearedListener:
+		case hazelcast.EntryAddedListener:
+		case hazelcast.EntryRemovedListener:
+		case hazelcast.MapClearedListener:
 		default:
 			err = argErr
 		}
@@ -213,7 +213,7 @@ func (p *Impl) validateEntryListener(listener interface{}) (err error) {
 
 func (p *Impl) validateAndSerializeMapAndGetPartitions(entries map[interface{}]interface{}) (map[int32][]*proto.Pair, error) {
 	if entries == nil {
-		return nil, core.NewHazelcastNilPointerError(bufutil.NilMapIsNotAllowed, nil)
+		return nil, hazelcast.NewHazelcastNilPointerError(bufutil.NilMapIsNotAllowed, nil)
 	}
 	partitions := make(map[int32][]*proto.Pair)
 	for key, value := range entries {
@@ -243,7 +243,7 @@ func (p *Impl) invokeOnPartition(request *proto.ClientMessage, partitionID int32
 	return p.invocationService.Send(inv).Get()
 }
 
-func (p *Impl) invokeOnAddress(request *proto.ClientMessage, address *core.Address) (*proto.ClientMessage, error) {
+func (p *Impl) invokeOnAddress(request *proto.ClientMessage, address *hazelcast.Address) (*proto.ClientMessage, error) {
 	inv := p.invocationFactory.NewInvocationOnTarget(request, address)
 	return p.invocationService.Send(inv).Get()
 }
@@ -311,12 +311,12 @@ func (p *Impl) createOnItemEvent(listener interface{}) func(itemData serializati
 		member := p.clusterService.GetMemberByUUID(uuid)
 		itemEvent := proto.NewItemEvent(p.name, item, eventType, member.(*proto.Member))
 		if eventType == bufutil.ItemAdded {
-			if _, ok := listener.(core.ItemAddedListener); ok {
-				listener.(core.ItemAddedListener).ItemAdded(itemEvent)
+			if _, ok := listener.(hazelcast.ItemAddedListener); ok {
+				listener.(hazelcast.ItemAddedListener).ItemAdded(itemEvent)
 			}
 		} else if eventType == bufutil.ItemRemoved {
-			if _, ok := listener.(core.ItemRemovedListener); ok {
-				listener.(core.ItemRemovedListener).ItemRemoved(itemEvent)
+			if _, ok := listener.(hazelcast.ItemRemovedListener); ok {
+				listener.(hazelcast.ItemRemovedListener).ItemRemoved(itemEvent)
 			}
 		}
 	}

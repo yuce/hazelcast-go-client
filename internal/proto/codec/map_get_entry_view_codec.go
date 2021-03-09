@@ -14,7 +14,7 @@
 package codec
 
 import (
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 	"github.com/hazelcast/hazelcast-go-client/v4/serialization"
 )
@@ -51,7 +51,7 @@ func EncodeMapGetEntryViewRequest(name string, key serialization.Data, threadId 
 	return clientMessage
 }
 
-func DecodeMapGetEntryViewResponse(clientMessage *proto.ClientMessage) (response *core.SimpleEntryView, maxIdle int64) {
+func DecodeMapGetEntryViewResponse(clientMessage *proto.ClientMessage) (response *hazelcast.SimpleEntryView, maxIdle int64) {
 	frameIterator := clientMessage.FrameIterator()
 	initialFrame := frameIterator.Next()
 

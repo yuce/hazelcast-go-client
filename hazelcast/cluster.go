@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core
+package hazelcast
 
 // Cluster is a cluster service for Hazelcast clients.
 // It provides access to the members in the cluster and one can register for changes in the

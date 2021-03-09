@@ -5,7 +5,7 @@ import (
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 	"testing"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -387,7 +387,7 @@ func TestFixSizedTypesCodec_EncodeUUID(t *testing.T) {
 	//given
 	buffer := make([]byte, proto.UUIDSizeInBytes)
 	offset := int32(0)
-	uuid := core.NewUUID()
+	uuid := hazelcast.NewUUID()
 
 	//when
 	FixSizedTypesCodec.EncodeUUID(buffer, offset, uuid)
@@ -414,7 +414,7 @@ func TestFixSizedTypesCodec_DecodeUUID(t *testing.T) {
 	//given
 	buffer := make([]byte, proto.UUIDSizeInBytes)
 	offset := int32(0)
-	uuid := core.NewUUID()
+	uuid := hazelcast.NewUUID()
 	FixSizedTypesCodec.EncodeUUID(buffer, offset, uuid)
 
 	//when
@@ -430,7 +430,7 @@ func TestFixSizedTypesCodec_DecodeUUID(t *testing.T) {
 func TestEntryListUUIDLongCodec_Encode(t *testing.T) {
 	// given
 	message := proto.NewClientMessageForEncode()
-	key := core.NewUUID()
+	key := hazelcast.NewUUID()
 	value := int64(100)
 	pairs := make([]proto.Pair, 0)
 	pairs = append(pairs, proto.NewPair(key, value))
@@ -441,16 +441,16 @@ func TestEntryListUUIDLongCodec_Encode(t *testing.T) {
 
 	// then
 	frame := pairs[0]
-	assert.Equal(t, frame.Key().(core.UUID).String(), key.String())
+	assert.Equal(t, frame.Key().(hazelcast.UUID).String(), key.String())
 	assert.Equal(t, frame.Value().(int64), value)
 }
 
 func TestListUUIDCodec_Encode(t *testing.T) {
 	// given
 	message := proto.NewClientMessageForEncode()
-	entries := make([]core.UUID, 0)
-	value1 := core.NewUUID()
-	value2 := core.NewUUID()
+	entries := make([]hazelcast.UUID, 0)
+	value1 := hazelcast.NewUUID()
+	value2 := hazelcast.NewUUID()
 	entries = append(entries, value1, value2)
 
 	// when
@@ -529,7 +529,7 @@ func TestListLongCodec_Decode(t *testing.T) {
 func TestEntryListUUIDListIntegerCodec_Encode(t *testing.T) {
 	// given
 	clientMessage := proto.NewClientMessageForEncode()
-	key := core.NewUUID()
+	key := hazelcast.NewUUID()
 	value := make([]int32, 0)
 	value = append(value, 1, 2, 3)
 	pair := proto.NewPair(key, value)
@@ -554,7 +554,7 @@ func TestEntryListUUIDListIntegerCodec_Encode(t *testing.T) {
 func TestEntryListUUIDListIntegerCodec_Decode(t *testing.T) {
 	// given
 	clientMessage := proto.NewClientMessageForEncode()
-	key := core.NewUUID()
+	key := hazelcast.NewUUID()
 	value := make([]int32, 0)
 	value = append(value, 1, 2, 3)
 	pair := proto.NewPair(key, value)
@@ -567,7 +567,7 @@ func TestEntryListUUIDListIntegerCodec_Decode(t *testing.T) {
 
 	// then
 	assert.Equal(t, len(result), 1)
-	assert.Equal(t, result[0].Key().([]core.UUID)[0].String(), key.String())
+	assert.Equal(t, result[0].Key().([]hazelcast.UUID)[0].String(), key.String())
 	assert.EqualValues(t, result[0].Value().([]int32), value)
 }
 

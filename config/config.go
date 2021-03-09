@@ -16,7 +16,7 @@
 package config
 
 import (
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/serialization"
 )
 
@@ -58,7 +58,7 @@ type Config struct {
 	properties Properties
 
 	// loadBalancer is used to distribute the operations to multiple endpoints.
-	loadBalancer core.LoadBalancer
+	loadBalancer hazelcast.LoadBalancer
 
 	// clientName is the name of client with this config.
 	clientName string
@@ -173,12 +173,12 @@ func (c *Config) ClientName() string {
 
 // LoadBalancer returns loadBalancer for this client.
 // If it is not set, this will return nil.
-func (c *Config) LoadBalancer() core.LoadBalancer {
+func (c *Config) LoadBalancer() hazelcast.LoadBalancer {
 	return c.loadBalancer
 }
 
 // SetLoadBalancer sets loadBalancer as the given one.
-func (c *Config) SetLoadBalancer(loadBalancer core.LoadBalancer) {
+func (c *Config) SetLoadBalancer(loadBalancer hazelcast.LoadBalancer) {
 	c.loadBalancer = loadBalancer
 }
 

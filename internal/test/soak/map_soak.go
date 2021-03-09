@@ -29,8 +29,8 @@ import (
 
 	"os"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
-	"github.com/hazelcast/hazelcast-go-client/v4/core/predicate"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/predicate"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/serialization"
 )
@@ -141,19 +141,19 @@ func startMapSoak() {
 type simpleListener struct {
 }
 
-func (l *simpleListener) EntryAdded(event core.EntryEvent) {
+func (l *simpleListener) EntryAdded(event hazelcast.EntryEvent) {
 	event.Key()
 	event.Value()
 	event.OldValue()
 }
 
-func (l *simpleListener) EntryUpdated(event core.EntryEvent) {
+func (l *simpleListener) EntryUpdated(event hazelcast.EntryEvent) {
 	event.Key()
 	event.Value()
 	event.OldValue()
 }
 
-func (l *simpleListener) EntryRemoved(event core.EntryEvent) {
+func (l *simpleListener) EntryRemoved(event hazelcast.EntryEvent) {
 	event.Key()
 	event.Value()
 	event.OldValue()

@@ -21,7 +21,7 @@ import (
 
 	"crypto/tls"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -78,7 +78,7 @@ func TestSSLConfigWithWrongFormatCAFile(t *testing.T) {
 	cfg := hazelcast.NewConfig()
 	sslCfg := cfg.NetworkConfig().SSLConfig()
 	err := sslCfg.SetCaPath("invalid-format.txt")
-	if _, ok := err.(*core.HazelcastIOError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastIOError); !ok {
 		t.Errorf("SSL Config.SetCaPath should return a HazelcastIOError for invalid file format")
 	}
 }

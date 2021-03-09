@@ -22,7 +22,7 @@ import (
 	"sync"
 
 	"github.com/hazelcast/hazelcast-go-client/v4/config/property"
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/test/testutil"
 	"github.com/stretchr/testify/assert"
@@ -80,7 +80,7 @@ func TestServerShouldNotCloseClientWhenClientOnlyListening(t *testing.T) {
 type topicMessageListener struct {
 }
 
-func (l *topicMessageListener) OnMessage(message core.Message) error {
+func (l *topicMessageListener) OnMessage(message hazelcast.Message) error {
 	return nil
 }
 
@@ -91,7 +91,7 @@ type lifecycleListener2 struct {
 }
 
 func (l *lifecycleListener2) LifecycleStateChanged(newState string) {
-	if newState == core.LifecycleStateDisconnected {
+	if newState == hazelcast.LifecycleStateDisconnected {
 		l.collector = append(l.collector, newState)
 		if l.shouldWait {
 			l.wg.Done()

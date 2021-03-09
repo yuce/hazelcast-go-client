@@ -15,7 +15,7 @@
 package config
 
 import (
-	"github.com/hazelcast/hazelcast-go-client/v4/core/logger"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/logger"
 )
 
 // LoggerConfig is used for configuring client's logging.

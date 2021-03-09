@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core
+package hazelcast
 
 // TopicOverloadPolicy is a policy to deal with an overloaded topic; so topic where there is no place to store new messages.
 //

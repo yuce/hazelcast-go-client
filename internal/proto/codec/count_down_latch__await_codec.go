@@ -14,7 +14,7 @@
 package codec
 
 import (
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 )
 
@@ -48,7 +48,7 @@ const (
 // waiting time elapses then the value false is returned.  If the time is
 // less than or equal to zero, the method will not wait at all.
 
-func EncodeCountDownLatchAwaitRequest(groupId proto.RaftGroupId, name string, invocationUid core.UUID, timeoutMs int64) *proto.ClientMessage {
+func EncodeCountDownLatchAwaitRequest(groupId proto.RaftGroupId, name string, invocationUid hazelcast.UUID, timeoutMs int64) *proto.ClientMessage {
 	clientMessage := proto.NewClientMessageForEncode()
 	clientMessage.SetRetryable(true)
 

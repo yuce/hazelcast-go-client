@@ -18,7 +18,7 @@ import (
 	"log"
 	"testing"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto/bufutil"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/rc"
@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var ringbuffer core.Ringbuffer
+var ringbuffer hazelcast.Ringbuffer
 var client hazelcast.Client
 
 const capacity int64 = 10
@@ -68,7 +68,7 @@ func TestRingbufferProxy_PartitionKey(t *testing.T) {
 
 func fillRingbuffer(capacity int64) {
 	for i := int64(0); i < capacity; i++ {
-		ringbuffer.Add(i, core.OverflowPolicyOverwrite)
+		ringbuffer.Add(i, hazelcast.OverflowPolicyOverwrite)
 	}
 }
 
@@ -87,7 +87,7 @@ func TestRingbufferProxy_Capacity(t *testing.T) {
 
 func TestRingbufferProxy_Add(t *testing.T) {
 	defer destroyAndCreate()
-	sequence, _ := ringbuffer.Add("value", core.OverflowPolicyOverwrite)
+	sequence, _ := ringbuffer.Add("value", hazelcast.OverflowPolicyOverwrite)
 	item, err := ringbuffer.ReadOne(sequence)
 	require.NoError(t, err)
 	assert.Equalf(t, "value", item, "ringbuffer Add() failed")
@@ -95,7 +95,7 @@ func TestRingbufferProxy_Add(t *testing.T) {
 
 func TestRingbufferProxy_AddNonSerializable(t *testing.T) {
 	defer destroyAndCreate()
-	_, err := ringbuffer.Add(testutil.NewNonSerializableObject(), core.OverflowPolicyOverwrite)
+	_, err := ringbuffer.Add(testutil.NewNonSerializableObject(), hazelcast.OverflowPolicyOverwrite)
 	require.Error(t, err)
 }
 
@@ -105,7 +105,7 @@ func TestRingbufferProxy_Size(t *testing.T) {
 	for i := int64(0); i < capacity; i++ {
 		items[i] = i
 	}
-	_, err := ringbuffer.AddAll(items, core.OverflowPolicyFail)
+	_, err := ringbuffer.AddAll(items, hazelcast.OverflowPolicyFail)
 	require.NoError(t, err)
 	size, err := ringbuffer.Size()
 	require.NoError(t, err)
@@ -141,7 +141,7 @@ func TestRingbufferProxy_RemainingCapacity(t *testing.T) {
 func TestRingbufferProxy_AddWhenFull(t *testing.T) {
 	defer destroyAndCreate()
 	fillRingbuffer(capacity)
-	sequence, err := ringbuffer.Add(capacity+1, core.OverflowPolicyFail)
+	sequence, err := ringbuffer.Add(capacity+1, hazelcast.OverflowPolicyFail)
 	require.NoError(t, err)
 	assert.Equalf(t, int64(-1), sequence, "ringbuffer Add() failed")
 
@@ -153,14 +153,14 @@ func TestRingbufferProxy_AddAll(t *testing.T) {
 	for i := int64(0); i < capacity; i++ {
 		items[i] = i
 	}
-	lastSequence, err := ringbuffer.AddAll(items, core.OverflowPolicyFail)
+	lastSequence, err := ringbuffer.AddAll(items, hazelcast.OverflowPolicyFail)
 	require.NoError(t, err)
 	assert.Equalf(t, capacity-1, lastSequence, "ringbuffer AddAll() failed")
 }
 
 func TestRingbufferProxy_AddAllNonSerializable(t *testing.T) {
 	defer destroyAndCreate()
-	_, err := ringbuffer.AddAll(testutil.NewNonSerializableObjectSlice(), core.OverflowPolicyFail)
+	_, err := ringbuffer.AddAll(testutil.NewNonSerializableObjectSlice(), hazelcast.OverflowPolicyFail)
 	require.Error(t, err)
 }
 
@@ -170,14 +170,14 @@ func TestRingbufferProxy_AddAllWhenFull(t *testing.T) {
 	for i := int64(0); i < capacity*2; i++ {
 		items[i] = i
 	}
-	lastSequence, err := ringbuffer.AddAll(items, core.OverflowPolicyFail)
+	lastSequence, err := ringbuffer.AddAll(items, hazelcast.OverflowPolicyFail)
 	require.NoError(t, err)
 	assert.Equalf(t, int64(-1), lastSequence, "ringbuffer AddAll() failed")
 }
 
 func TestRingbufferProxy_RemainingCapacity2(t *testing.T) {
 	defer destroyAndCreate()
-	_, err := ringbuffer.Add("value", core.OverflowPolicyOverwrite)
+	_, err := ringbuffer.Add("value", hazelcast.OverflowPolicyOverwrite)
 	require.NoError(t, err)
 	remainingCapacity, err := ringbuffer.RemainingCapacity()
 	require.NoError(t, err)
@@ -186,9 +186,9 @@ func TestRingbufferProxy_RemainingCapacity2(t *testing.T) {
 
 func TestRingbufferProxy_ReadOne(t *testing.T) {
 	defer destroyAndCreate()
-	ringbuffer.Add("item", core.OverflowPolicyOverwrite)
-	ringbuffer.Add("item-2", core.OverflowPolicyOverwrite)
-	ringbuffer.Add("item-3", core.OverflowPolicyOverwrite)
+	ringbuffer.Add("item", hazelcast.OverflowPolicyOverwrite)
+	ringbuffer.Add("item-2", hazelcast.OverflowPolicyOverwrite)
+	ringbuffer.Add("item-3", hazelcast.OverflowPolicyOverwrite)
 	item, err := ringbuffer.ReadOne(0)
 	require.NoError(t, err)
 	assert.Equalf(t, "item", item, "ringbuffer ReadOne() failed")

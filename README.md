@@ -155,7 +155,7 @@ Members {size:1, ver:1} [
 	Member [192.168.0.3]:5701 - 65dac4d1-2559-44bb-ba2e-ca41c56eedd6 this
 ]
 
-Sep 06, 2018 10:50:23 AM com.hazelcast.core.LifecycleService
+Sep 06, 2018 10:50:23 AM com.hazelcast.hazelcast.LifecycleService
 INFO: [192.168.0.3]:5701 [dev] [3.10.4] [192.168.0.3]:5701 is STARTED
 ```
 
@@ -787,10 +787,10 @@ You can construct a `HazelcastJSONValue` from string or from your go object:
 
 ```go
 //from string
-core.CreateHazelcastJSONValueFromString{"your json string"}
+hazelcast.CreateHazelcastJSONValueFromString{"your json string"}
 
 //from go object
-core.CreateHazelcastJSONValueFromString{yourObject}
+hazelcast.CreateHazelcastJSONValueFromString{yourObject}
 ```
 
 No JSON parsing is performed but it is your responsibility to provide correctly formatted JSON strings. The client will not validate the string, and it will send it to the cluster as it is. If you submit incorrectly formatted JSON strings and, later, if you query those objects, it is highly possible that you will get formatting errors since the server will fail to deserialize or find the query fields.
@@ -798,9 +798,9 @@ No JSON parsing is performed but it is your responsibility to provide correctly 
 Here is an example of how you can construct a `HazelcastJSONValue` and put to the map:
 
 ```go
-jsonValue1 , _ := core.CreateHazelcastJSONValueFromString("{ \"age\": 4 }")
+jsonValue1 , _ := hazelcast.CreateHazelcastJSONValueFromString("{ \"age\": 4 }")
 mp.Put("item1", jsonValue1)
-jsonValue2 , _ := core.CreateHazelcastJSONValueFromString("{ \"age\": 4 }")
+jsonValue2 , _ := hazelcast.CreateHazelcastJSONValueFromString("{ \"age\": 4 }")
 mp.Put("item2", jsonValue2)
 ```
 
@@ -810,7 +810,7 @@ You can query JSON objects in the cluster using the `Predicate`s of your choice.
 // Get the objects whose age is greater than 6
 result, _ := mp.ValuesWithPredicate(predicate.GreaterThan("age", 6))
 var person interface{}
-result[0].(*core.HazelcastJSONValue).Unmarshal(&person)
+result[0].(*hazelcast.HazelcastJSONValue).Unmarshal(&person)
 log.Println("Retrieved: ", len(result))
 log.Println("Entry is: ", person)
 ```
@@ -824,13 +824,13 @@ type person struct {
 }
 
 
-person1 , _ := core.CreateHazelcastJSONValue(person{Age: 20, Name: "Walter"})
-person2 , _ := core.CreateHazelcastJSONValue(person{Age: 5, Name: "Mike"})
+person1 , _ := hazelcast.CreateHazelcastJSONValue(person{Age: 20, Name: "Walter"})
+person2 , _ := hazelcast.CreateHazelcastJSONValue(person{Age: 5, Name: "Mike"})
 mp.Put("item1", person1)
 mp.Put("item2", person2)
 result, _ := mp.ValuesWithPredicate(predicate.GreaterThan("Age", 6))
 var person person
-value := result[0].(*core.HazelcastJSONValue)
+value := result[0].(*hazelcast.HazelcastJSONValue)
 log.Println(value.ToString()) //{"Age":20,"Name":"Walter"}
 value.Unmarshal(&person)
 log.Println("Retrieved: ", len(result)) // Retrieved: 1
@@ -1292,8 +1292,8 @@ rb, _ := hz.GetRingbuffer("rb")
 // we start from the oldest item.
 // if you want to start from the next item, call rb.tailSequence()+1
 // add two items into ring buffer
-rb.Add(100, core.OverflowPolicyOverwrite)
-rb.Add(200, core.OverflowPolicyOverwrite)
+rb.Add(100, hazelcast.OverflowPolicyOverwrite)
+rb.Add(200, hazelcast.OverflowPolicyOverwrite)
 
 // we start from the oldest item.
 // if you want to start from the next item, call rb.tailSequence()+1
@@ -1373,11 +1373,11 @@ The following is a membership listener registration by using `client.Cluster().A
 type membershipListener struct {
 }
 
-func (l *membershipListener) MemberAdded(member core.Member) {
+func (l *membershipListener) MemberAdded(member hazelcast.Member) {
 	fmt.Println("New member joined: ", member)
 }
 
-func (l *membershipListener) MemberRemoved(member core.Member) {
+func (l *membershipListener) MemberRemoved(member hazelcast.Member) {
 	fmt.Println("Member left: ", member)
 }
 ```
@@ -1461,7 +1461,7 @@ See the following example.
 type entryListener struct {
 }
 
-func (l *entryListener) EntryAdded(event core.EntryEvent) {
+func (l *entryListener) EntryAdded(event hazelcast.EntryEvent) {
 	fmt.Println("Entry Added: ", event.Key(), " ", event.Value()) // Entry Added: 1 Furkan
 }
 ```
@@ -1485,7 +1485,7 @@ See the following example.
 type mapListener struct {
 }
 
-func (l *mapListener) MapCleared(event core.MapEvent) {
+func (l *mapListener) MapCleared(event hazelcast.MapEvent) {
 	fmt.Println("Map Cleared:", event.NumberOfAffectedEntries()) // Map Cleared: 3
 }
 ```
@@ -1513,7 +1513,7 @@ An entry-based event is fired after the operations that affect a specific entry.
 type EntryListener struct {
 }
 
-func (l *EntryListener) EntryAdded(event core.EntryEvent) {
+func (l *EntryListener) EntryAdded(event hazelcast.EntryEvent) {
 	log.Println("Entry Added:", event.Key(), event.Value()) // Entry Added: 1 Furkan
 }
 
@@ -1530,7 +1530,7 @@ See the following example.
 type EntryListener struct {
 }
 
-func (l *EntryListener) MapCleared(event core.MapEvent) {
+func (l *EntryListener) MapCleared(event hazelcast.MapEvent) {
 	log.Println("Map Cleared:", event.NumberOfAffectedEntries()) // Map Cleared: 1
 }
 multiMap.AddEntryListener(&EntryListener{}, true)
@@ -1571,11 +1571,11 @@ The following is an example of item listener object and its registration to the 
 type itemListener struct {
 }
 
-func (l *itemListener) ItemAdded(event core.ItemEvent) {
+func (l *itemListener) ItemAdded(event hazelcast.ItemEvent) {
 	log.Println("Item added:", event.Item()) // Item added: Furkan
 }
 
-func (l *itemListener) ItemRemoved(event core.ItemEvent) {
+func (l *itemListener) ItemRemoved(event hazelcast.ItemEvent) {
 	log.Println("Item removed:", event.Item()) // Item removed: Furkan
 }
 
@@ -1598,7 +1598,7 @@ See the following example.
 type topicMessageListener struct {
 }
 
-func (l *topicMessageListener) OnMessage(message core.Message) error {
+func (l *topicMessageListener) OnMessage(message hazelcast.Message) error {
 	log.Println(message.MessageObject()) // furkan
 	return nil
 }
@@ -1964,9 +1964,9 @@ you first need to create a `HazelcastJSONValue` from the JSON string. You can us
 possible to query these objects using the Hazelcast query methods explained in this section.
 
 ```go
-person1 , _ := core.CreateHazelcastJSONValueFromString{"{ \"name\": \"John\", \"age\": 35 }"}
-person2 , _ := core.CreateHazelcastJSONValueFromString{"{ \"name\": \"Jane\", \"age\": 24 }"}
-person3 , _ := core.CreateHazelcastJSONValueFromString{"{ \"name\": \"Trey\", \"age\": 17 }"}
+person1 , _ := hazelcast.CreateHazelcastJSONValueFromString{"{ \"name\": \"John\", \"age\": 35 }"}
+person2 , _ := hazelcast.CreateHazelcastJSONValueFromString{"{ \"name\": \"Jane\", \"age\": 24 }"}
+person3 , _ := hazelcast.CreateHazelcastJSONValueFromString{"{ \"name\": \"Trey\", \"age\": 17 }"}
 
 mp.Put(1, person1)
 mp.Put(2, person2)

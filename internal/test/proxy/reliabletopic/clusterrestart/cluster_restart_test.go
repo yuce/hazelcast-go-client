@@ -24,7 +24,7 @@ import (
 	"log"
 
 	"github.com/hazelcast/hazelcast-go-client/v4/config/property"
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/rc"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/test/testutil"
@@ -161,7 +161,7 @@ type messageListenerMock struct {
 	wg *sync.WaitGroup
 }
 
-func (m *messageListenerMock) OnMessage(message core.Message) error {
+func (m *messageListenerMock) OnMessage(message hazelcast.Message) error {
 	m.wg.Done()
 	return nil
 }
@@ -170,11 +170,11 @@ type DurableMessageListenerMock struct {
 	storedSeq      int64
 	isLossTolerant bool
 	wg             *sync.WaitGroup
-	messages       []core.Message
+	messages       []hazelcast.Message
 	err            error
 }
 
-func (r *DurableMessageListenerMock) OnMessage(message core.Message) error {
+func (r *DurableMessageListenerMock) OnMessage(message hazelcast.Message) error {
 	r.messages = append(r.messages, message)
 	r.wg.Done()
 	return r.err

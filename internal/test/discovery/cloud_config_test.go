@@ -21,7 +21,7 @@ import (
 
 	"github.com/hazelcast/hazelcast-go-client/v4/config"
 	"github.com/hazelcast/hazelcast-go-client/v4/config/property"
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/discovery"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
 	"github.com/stretchr/testify/assert"
@@ -56,7 +56,7 @@ func TestCloudConfigWithPropertySet(t *testing.T) {
 	cfg := hazelcast.NewConfig()
 	cfg.NetworkConfig().SetCloudConfig(cloudConfig)
 	_, err := hazelcast.NewClientWithConfig(cfg)
-	if _, ok := err.(*core.HazelcastIllegalStateError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastIllegalStateError); !ok {
 		t.Error("Cloud discovery should have returned an error for both property and client configuration based" +
 			" setup")
 	}

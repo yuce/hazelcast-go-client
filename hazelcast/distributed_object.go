@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core
+package hazelcast
 
 // DistributedObject is the base interface for all distributed objects.
 type DistributedObject interface {

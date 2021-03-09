@@ -19,8 +19,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
-	"github.com/hazelcast/hazelcast-go-client/v4/core/predicate"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/predicate"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/rc"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/test/testutil"
@@ -28,7 +28,7 @@ import (
 )
 
 var client hazelcast.Client
-var mp core.Map
+var mp hazelcast.Map
 
 func TestMain(m *testing.M) {
 	remoteController, err := rc.NewRemoteControllerClient("localhost:9701")

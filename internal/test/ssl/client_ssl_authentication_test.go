@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/hazelcast/hazelcast-go-client/v4/config"
-	"github.com/hazelcast/hazelcast-go-client/v4/core"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/rc"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/test/testutil"
@@ -121,7 +121,7 @@ func TestSSLMutualAuthentication_ClientDoesntKnowServerFail(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err = hazelcast.NewClientWithConfig(config)
-	if _, ok := err.(*core.HazelcastIllegalStateError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastIllegalStateError); !ok {
 		t.Error(err)
 	}
 }
@@ -138,7 +138,7 @@ func TestSSLMutualAuthentication_ServerDoesntKnowClientFail(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err = hazelcast.NewClientWithConfig(config)
-	if _, ok := err.(*core.HazelcastIllegalStateError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastIllegalStateError); !ok {
 		t.Error(err)
 	}
 }
@@ -155,7 +155,7 @@ func TestSSLMutualAuthentication_NeitherServerNorClientKnowsTheOtherFail(t *test
 		t.Fatal(err)
 	}
 	_, err = hazelcast.NewClientWithConfig(config)
-	if _, ok := err.(*core.HazelcastIllegalStateError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastIllegalStateError); !ok {
 		t.Error(err)
 	}
 }
@@ -191,7 +191,7 @@ func TestSSLOptionalMutualAuthentication_ClientDoesntKnowServerFail(t *testing.T
 		t.Fatal(err)
 	}
 	_, err = hazelcast.NewClientWithConfig(config)
-	if _, ok := err.(*core.HazelcastIllegalStateError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastIllegalStateError); !ok {
 		t.Error(err)
 	}
 }
@@ -228,7 +228,7 @@ func TestSSLOptionalMutualAuthentication_NeitherServerNorClientKnowsTheOther(t *
 	}
 
 	_, err = hazelcast.NewClientWithConfig(config)
-	if _, ok := err.(*core.HazelcastIllegalStateError); !ok {
+	if _, ok := err.(*hazelcast.HazelcastIllegalStateError); !ok {
 		t.Error(err)
 	}
 }
