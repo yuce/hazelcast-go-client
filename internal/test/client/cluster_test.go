@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/hazelcast/hazelcast-go-client/v4/internal"
-	"github.com/hazelcast/hazelcast-go-client/v4/config"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/config"
 	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"

@@ -26,8 +26,8 @@ import (
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/aggregation"
 	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/projection"
-	"github.com/hazelcast/hazelcast-go-client/v4/serialization"
-	"github.com/hazelcast/hazelcast-go-client/v4/serialization/spi"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/serialization"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/serialization/spi"
 	"github.com/stretchr/testify/assert"
 )
 

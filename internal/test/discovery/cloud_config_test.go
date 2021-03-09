@@ -19,8 +19,8 @@ import (
 
 	"os"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/config"
-	"github.com/hazelcast/hazelcast-go-client/v4/config/property"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/config"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/config/property"
 	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/discovery"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/hazelcast"

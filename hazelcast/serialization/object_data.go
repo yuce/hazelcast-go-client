@@ -20,7 +20,7 @@ import (
 
 	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto/bufutil"
-	"github.com/hazelcast/hazelcast-go-client/v4/serialization/bufferutil"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/serialization/bufferutil"
 )
 
 type ObjectDataOutput struct {

@@ -14,29 +14,13 @@
 
 package compatibility
 
-import "github.com/hazelcast/hazelcast-go-client/v4/serialization"
+import "github.com/hazelcast/hazelcast-go-client/v4/hazelcast/serialization"
 
-type AnInnerPortable struct {
-	anInt  int32
-	aFloat float32
-}
+type aDataSerializableFactory struct{}
 
-func (*AnInnerPortable) FactoryID() int32 {
-	return portableFactoryID
-}
-
-func (*AnInnerPortable) ClassID() int32 {
-	return innerPortableClassID
-}
-
-func (ip *AnInnerPortable) WritePortable(writer serialization.PortableWriter) error {
-	writer.WriteInt32("i", ip.anInt)
-	writer.WriteFloat32("f", ip.aFloat)
+func (*aDataSerializableFactory) Create(classID int32) serialization.IdentifiedDataSerializable {
+	if classID == dataSerializableClassID {
+		return &anIdentifiedDataSerializable{}
+	}
 	return nil
-}
-
-func (ip *AnInnerPortable) ReadPortable(reader serialization.PortableReader) error {
-	ip.anInt = reader.ReadInt32("i")
-	ip.aFloat = reader.ReadFloat32("f")
-	return reader.Error()
 }

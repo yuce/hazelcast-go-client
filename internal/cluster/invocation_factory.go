@@ -4,7 +4,7 @@ import (
 	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/invocation"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
-	"github.com/hazelcast/hazelcast-go-client/v4/serialization"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/serialization"
 	"time"
 )
 

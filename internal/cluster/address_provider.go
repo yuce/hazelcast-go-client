@@ -2,7 +2,7 @@ package cluster
 
 import (
     "github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
-    "github.com/hazelcast/hazelcast-go-client/v4/config"
+    "github.com/hazelcast/hazelcast-go-client/v4/hazelcast/config"
 ) 
 
 type AddressProvider interface {

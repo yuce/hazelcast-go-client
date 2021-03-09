@@ -15,7 +15,7 @@
 package proto
 
 import (
-	"github.com/hazelcast/hazelcast-go-client/v4/serialization"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/serialization"
 )
 
 func listRemoveCalculateSize(name string, value serialization.Data) int {

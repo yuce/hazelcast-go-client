@@ -18,13 +18,13 @@ import (
 	"fmt"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/cluster"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/invocation"
-	"github.com/hazelcast/hazelcast-go-client/v4/serialization/spi"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/serialization/spi"
 	"reflect"
 
 	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto/bufutil"
-	"github.com/hazelcast/hazelcast-go-client/v4/serialization"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/serialization"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/util/colutil"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/util/nilutil"
 )

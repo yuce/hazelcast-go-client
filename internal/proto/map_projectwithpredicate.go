@@ -15,7 +15,7 @@
 package proto
 
 import (
-	"github.com/hazelcast/hazelcast-go-client/v4/serialization"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/serialization"
 )
 
 func mapProjectWithPredicateCalculateSize(name string, projection serialization.Data, predicate serialization.Data) int {

@@ -16,7 +16,7 @@ package proto
 
 import (
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto/bufutil"
-	"github.com/hazelcast/hazelcast-go-client/v4/serialization"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/serialization"
 )
 
 func ringbufferReadOneCalculateSize(name string, sequence int64) int {

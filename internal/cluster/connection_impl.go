@@ -23,7 +23,7 @@ import (
 
 	"crypto/tls"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/config"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/config"
 	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/logger"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"

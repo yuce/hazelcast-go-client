@@ -15,7 +15,7 @@
 package spi
 
 import (
-	"github.com/hazelcast/hazelcast-go-client/v4/serialization"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/serialization"
 )
 
 // NewSerializationService creates and returns a new serialization service with the given config.

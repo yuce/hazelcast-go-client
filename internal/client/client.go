@@ -3,13 +3,13 @@ package client
 import (
 	"fmt"
 	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
-    "github.com/hazelcast/hazelcast-go-client/v4/config"
+    "github.com/hazelcast/hazelcast-go-client/v4/hazelcast/config"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/cluster"
 	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/logger"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/invocation"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proxy"
-	"github.com/hazelcast/hazelcast-go-client/v4/security"
-	"github.com/hazelcast/hazelcast-go-client/v4/serialization"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/security"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/serialization"
 	"sync/atomic"
 	"time"
 )

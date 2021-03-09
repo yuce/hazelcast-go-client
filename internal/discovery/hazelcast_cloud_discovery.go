@@ -26,7 +26,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 
-	"github.com/hazelcast/hazelcast-go-client/v4/config/property"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/config/property"
 	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/util/iputil"
 )
