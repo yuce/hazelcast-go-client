@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/hzerror"
 	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/hztypes"
+	"github.com/hazelcast/hazelcast-go-client/v4/internal/sql"
+	"math"
 	"strings"
 
 	pubcluster "github.com/hazelcast/hazelcast-go-client/v4/hazelcast/cluster"
@@ -18,6 +20,9 @@ type Encoder func(message *proto.ClientMessage, value interface{})
 
 // Decoder create serialization.Data
 type Decoder func(frameIterator *proto.ForwardFrameIterator) serialization.Data
+
+// FixSizeEncoder
+type FixSizeEncoder func(buffer []byte, offset int32, value interface{})
 
 // CodecUtil
 type codecUtil struct{}
@@ -137,11 +142,11 @@ func EncodeData(message *proto.ClientMessage, value interface{}) {
 	message.AddFrame(proto.NewFrame(value.(serialization.Data).ToByteArray()))
 }
 
-func EncodeNullableData(message *proto.ClientMessage, data serialization.Data) {
+func EncodeNullableData(message *proto.ClientMessage, data interface{}) {
 	if data == nil {
 		message.AddFrame(proto.NullFrame.Copy())
 	} else {
-		message.AddFrame(proto.NewFrame(data.ToByteArray()))
+		message.AddFrame(proto.NewFrame(data.(serialization.Data).ToByteArray()))
 	}
 }
 
@@ -257,8 +262,8 @@ func EncodeListIntegerIntegerInteger(message *proto.ClientMessage, entries []pro
 	entryCount := len(entries)
 	frame := proto.NewFrame(make([]byte, entryCount*proto.EntrySizeInBytes))
 	for i := 0; i < entryCount; i++ {
-		FixSizedTypesCodec.EncodeInt(frame.Content, int32(i*proto.EntrySizeInBytes), entries[i].Key().(int32))
 		FixSizedTypesCodec.EncodeInt(frame.Content, int32(i*proto.EntrySizeInBytes+proto.IntSizeInBytes), entries[i].Value().(int32))
+		FixSizedTypesCodec.EncodeInt(frame.Content, int32(i*proto.EntrySizeInBytes), entries[i].Key().(int32))
 	}
 	message.AddFrame(frame)
 }
@@ -380,24 +385,48 @@ type fixSizedTypesCodec struct{}
 
 var FixSizedTypesCodec fixSizedTypesCodec
 
-func (fixSizedTypesCodec) EncodeInt(buffer []byte, offset, value int32) {
-	binary.LittleEndian.PutUint32(buffer[offset:], uint32(value))
+func (fixSizedTypesCodec) EncodeInt(buffer []byte, offset int32, value interface{}) {
+	binary.LittleEndian.PutUint32(buffer[offset:], uint32(value.(int32)))
 }
 
 func (fixSizedTypesCodec) DecodeInt(buffer []byte, offset int32) int32 {
 	return int32(binary.LittleEndian.Uint32(buffer[offset:]))
 }
 
-func (fixSizedTypesCodec) EncodeLong(buffer []byte, offset int32, value int64) {
-	binary.LittleEndian.PutUint64(buffer[offset:], uint64(value))
+func (fixSizedTypesCodec) EncodeShortInt(buffer []byte, offset int32, value interface{}) {
+	binary.LittleEndian.PutUint16(buffer[offset:], uint16(value.(int16)))
+}
+
+func (fixSizedTypesCodec) DecodeShortInt(buffer []byte, offset int32) int16 {
+	return int16(binary.LittleEndian.Uint16(buffer[offset:]))
+}
+
+func (fixSizedTypesCodec) EncodeFloat(buffer []byte, offset int32, value interface{}) {
+	FixSizedTypesCodec.EncodeInt(buffer, offset, math.Float32bits(value.(float32)))
+}
+
+func (fixSizedTypesCodec) DecodeFloat(buffer []byte, offset int32) float32 {
+	return math.Float32frombits(uint32(FixSizedTypesCodec.DecodeInt(buffer, offset)))
+}
+
+func (fixSizedTypesCodec) EncodeDouble(buffer []byte, offset int32, value interface{}) {
+	FixSizedTypesCodec.EncodeLong(buffer, offset, math.Float64bits(value.(float64)))
+}
+
+func (fixSizedTypesCodec) DecodeDouble(buffer []byte, offset int32) float64 {
+	return math.Float64frombits(uint64(FixSizedTypesCodec.DecodeLong(buffer, offset)))
+}
+
+func (fixSizedTypesCodec) EncodeLong(buffer []byte, offset int32, value interface{}) {
+	binary.LittleEndian.PutUint64(buffer[offset:], uint64(value.(int64)))
 }
 
 func (fixSizedTypesCodec) DecodeLong(buffer []byte, offset int32) int64 {
 	return int64(binary.LittleEndian.Uint64(buffer[offset:]))
 }
 
-func (fixSizedTypesCodec) EncodeBoolean(buffer []byte, offset int32, value bool) {
-	if value {
+func (fixSizedTypesCodec) EncodeBoolean(buffer []byte, offset int32, value interface{}) {
+	if value.(bool) {
 		buffer[offset] = 1
 	} else {
 		buffer[offset] = 0
@@ -408,8 +437,8 @@ func (fixSizedTypesCodec) DecodeBoolean(buffer []byte, offset int32) bool {
 	return buffer[offset] == 1
 }
 
-func (fixSizedTypesCodec) EncodeByte(buffer []byte, offset int32, value byte) {
-	buffer[offset] = value
+func (fixSizedTypesCodec) EncodeByte(buffer []byte, offset int32, value interface{}) {
+	buffer[offset] = value.(byte)
 }
 
 func (fixSizedTypesCodec) DecodeByte(buffer []byte, offset int32) byte {
@@ -480,7 +509,7 @@ func DecodeListLong(frameIterator *proto.ForwardFrameIterator) []int64 {
 	return result
 }
 
-func EncodeListMultiFrame(message *proto.ClientMessage, values []serialization.Data, encoder Encoder) {
+func EncodeListMultiFrame(message *proto.ClientMessage, values []interface{}, encoder Encoder) {
 	message.AddFrame(proto.BeginFrame)
 	for i := 0; i < len(values); i++ {
 		encoder(message, values[i])
@@ -512,7 +541,7 @@ func EncodeListMultiFrameForStackTraceElement(message *proto.ClientMessage, valu
 	message.AddFrame(proto.EndFrame)
 }
 
-func EncodeListMultiFrameContainsNullable(message *proto.ClientMessage, values []serialization.Data, encoder Encoder) {
+func EncodeListMultiFrameContainsNullable(message *proto.ClientMessage, values []interface{}, encoder Encoder) {
 	message.AddFrame(proto.BeginFrame)
 	for i := 0; i < len(values); i++ {
 		if values[i] == nil {
@@ -524,7 +553,7 @@ func EncodeListMultiFrameContainsNullable(message *proto.ClientMessage, values [
 	message.AddFrame(proto.EndFrame)
 }
 
-func EncodeListMultiFrameNullable(message *proto.ClientMessage, values []serialization.Data, encoder Encoder) {
+func EncodeListMultiFrameNullable(message *proto.ClientMessage, values []interface{}, encoder Encoder) {
 	if len(values) == 0 {
 		message.AddFrame(proto.NullFrame)
 	} else {
@@ -701,4 +730,189 @@ func EncodeString(message *proto.ClientMessage, value interface{}) {
 
 func DecodeString(frameIterator *proto.ForwardFrameIterator) string {
 	return string(frameIterator.Next().Content)
+}
+
+const (
+	HEADER_SIZE             = proto.ByteSizeInBytes + proto.IntSizeInBytes
+	ITEMS_PER_BITMASK       = 8
+	TYPE_NULL_ONLY     byte = 1
+	TYPE_NOT_NULL_ONLY byte = 2
+	TYPE_MIXED         byte = 3
+)
+
+func GetFrameSizeForCNFixed(nonNullCount int, totalCount int, itemSizeInBytes int) int {
+	var payload int
+	if nonNullCount == 0 {
+		// Only nulls. Write only size.
+		payload = 0
+	} else if nonNullCount == totalCount {
+		// Only non-nulls. Write without a bitmask.
+		payload = totalCount * itemSizeInBytes
+	} else {
+		// Mixed null and non-nulls. Write with a bitmask.
+		nonNullItemCumulativeSize := nonNullCount * itemSizeInBytes
+		bitmaskCumulativeSize := totalCount / ITEMS_PER_BITMASK
+		if totalCount%ITEMS_PER_BITMASK > 0 {
+			bitmaskCumulativeSize += 1
+		}
+		payload = nonNullItemCumulativeSize + bitmaskCumulativeSize
+	}
+	return payload + HEADER_SIZE
+}
+
+func EncodeCNFixedSizeHeader(frame *proto.Frame, _type byte, size int) {
+	FixSizedTypesCodec.EncodeByte(frame.Content, 0, _type)
+	FixSizedTypesCodec.EncodeInt(frame.Content, 1, size)
+}
+
+func EncodeListCNFixedSize(message *proto.ClientMessage, items []interface{}, itemSizeInBytes int, encoder FixSizeEncoder) {
+	total := 0
+	nonNull := 0
+
+	for _, v := range items {
+		if v != nil {
+			nonNull += 1
+		}
+		total += 1
+	}
+	frameSize := GetFrameSizeForCNFixed(nonNull, total, itemSizeInBytes)
+
+	frame := proto.NewFrame(make([]byte, frameSize))
+
+	if nonNull == 0 {
+		EncodeCNFixedSizeHeader(frame, TYPE_NULL_ONLY, total)
+	} else if nonNull == total {
+		EncodeCNFixedSizeHeader(frame, TYPE_NOT_NULL_ONLY, total)
+		for i, v := range items {
+			encoder(frame.Content, int32(HEADER_SIZE+i*itemSizeInBytes), v)
+		}
+	} else {
+		EncodeCNFixedSizeHeader(frame, TYPE_MIXED, total)
+
+
+		bitmaskPosition := HEADER_SIZE
+		nextItemPosition := bitmaskPosition + proto.ByteSizeInBytes
+
+		bitmask := 0
+		trackedItems := 0
+
+		for _, item := range items {
+			if item != nil {
+				bitmask = bitmask | 1 << trackedItems
+				encoder(frame.Content, int32(nextItemPosition), item)
+				nextItemPosition += itemSizeInBytes
+			}
+			trackedItems += 1
+			if trackedItems == ITEMS_PER_BITMASK {
+				FixSizedTypesCodec.EncodeByte(frame.Content, int32(bitmaskPosition), bitmask)
+				bitmaskPosition = nextItemPosition
+				nextItemPosition = bitmaskPosition + proto.ByteSizeInBytes
+				bitmask = 0
+				trackedItems = 0
+			}
+		}
+		if trackedItems != 0 {
+			FixSizedTypesCodec.EncodeByte(frame.Content, int32(bitmaskPosition), bitmask)
+		}
+	}
+	message.AddFrame(frame)
+}
+
+func EncodeListCNBoolean(message *proto.ClientMessage, items []interface{}) {
+	EncodeListCNFixedSize(message, items, proto.BooleanSizeInBytes, FixSizedTypesCodec.EncodeBoolean)
+}
+
+func EncodeListCNByte(message *proto.ClientMessage, items []interface{}) {
+	EncodeListCNFixedSize(message, items, proto.ByteSizeInBytes, FixSizedTypesCodec.EncodeByte)
+}
+
+func EncodeListCNShort(message *proto.ClientMessage, items []interface{}) {
+	EncodeListCNFixedSize(message, items, proto.ShortSizeInBytes, FixSizedTypesCodec.EncodeShortInt)
+}
+
+func EncodeListCNInteger(message *proto.ClientMessage, items []interface{}) {
+	EncodeListCNFixedSize(message, items, proto.IntSizeInBytes, FixSizedTypesCodec.EncodeInt)
+}
+
+func EncodeListCNLong(message *proto.ClientMessage, items []interface{}) {
+	EncodeListCNFixedSize(message, items, proto.LongSizeInBytes, FixSizedTypesCodec.EncodeLong)
+}
+
+func EncodeListCNFloat(message *proto.ClientMessage, items []interface{}) {
+	EncodeListCNFixedSize(message, items, proto.FloatSizeInBytes, FixSizedTypesCodec.EncodeFloat)
+}
+
+func EncodeListCNDouble(message *proto.ClientMessage, items []interface{}) {
+	EncodeListCNFixedSize(message, items, proto.DoubleSizeInBytes, FixSizedTypesCodec.EncodeDouble)
+}
+
+func EncodeSqlPage(message *proto.ClientMessage, sqlPage sql.Page) {
+	message.AddFrame(proto.BeginFrame.Copy())
+
+	// Write the last flag
+	content := []byte{0}
+	if sqlPage.Last() {
+		content = []byte{1}
+	}
+	message.AddFrame(proto.NewFrame(content))
+
+	// Write column types
+	columnTypes := sqlPage.ColumnTypes()
+	var columnTypeIds []int32
+
+	for _, columnTypeId := range columnTypes {
+		columnTypeIds = append(columnTypeIds, int32(columnTypeId))
+	}
+
+	EncodeListInteger(message, columnTypeIds)
+
+	// Write columns
+	for i := 0; i < sqlPage.ColumnCount(); i++ {
+		columnType := columnTypes[i]
+		column := sqlPage.ColumnValuesForServer(i)
+		switch columnType {
+		case sql.VARCHAR:
+			EncodeListMultiFrameContainsNullable(message, column, EncodeString)
+		case sql.BOOLEAN:
+			EncodeListCNBoolean(message, column)
+		case sql.TINYINT:
+			EncodeListCNByte(message, column)
+		case sql.SMALLINT:
+			EncodeListCNShort(message, column)
+		case sql.INTEGER:
+			EncodeListCNInteger(message, column)
+		case sql.BIGINT:
+			EncodeListCNLong(message, column)
+		case sql.REAL:
+			EncodeListCNFloat(message, column)
+		case sql.DOUBLE:
+			EncodeListCNDouble(message, column)
+		case sql.DATE:
+			// todo
+		case sql.TIME:
+			// todo
+		case sql.TIMESTAMP:
+			// todo
+		case sql.TIMESTAMP_WITH_TIME_ZONE:
+			// todo
+		case sql.DECIMAL:
+			// todo
+		case sql.NULL:
+			size := 0
+			for _ = range column {
+				size += 1
+			}
+
+			sizeBuffer := make([]byte, proto.IntSizeInBytes)
+			FixSizedTypesCodec.EncodeInt(sizeBuffer, 0, size)
+			message.AddFrame(proto.NewFrame(sizeBuffer))
+
+		case sql.OBJECT:
+			EncodeListMultiFrame(message, column, EncodeNullableData)
+
+		default:
+			panic("Unknown column type id " + columnType.String())
+		}
+	}
+
 }
