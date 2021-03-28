@@ -1,5 +1,7 @@
 package sql
 
+import "github.com/hazelcast/hazelcast-go-client/v4/internal/serialization"
+
 type DataHolder interface {
 	getRowCount() int
 	getColumnValueForClient(columnIndex int, rowIndex int) interface{}
@@ -28,4 +30,10 @@ func (p *Page) ColumnValuesForServer(columnIndex int) []interface{}{
 		panic("No such index")
 	}
 	return p.data.getColumnValuesForServer(columnIndex, p.columnTypes[columnIndex])
+}
+
+func NewPageFromColumns(columnTypes []ColumnType, columns [][]serialization.Data, isLast bool) Page {
+	return Page{
+
+	}
 }

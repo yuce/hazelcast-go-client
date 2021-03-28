@@ -21,9 +21,6 @@ type Encoder func(message *proto.ClientMessage, value interface{})
 // Decoder create serialization.Data
 type Decoder func(frameIterator *proto.ForwardFrameIterator) serialization.Data
 
-// FixSizeEncoder
-type FixSizeEncoder func(buffer []byte, offset int32, value interface{})
-
 // CodecUtil
 type codecUtil struct{}
 
@@ -765,7 +762,7 @@ func EncodeCNFixedSizeHeader(frame *proto.Frame, _type byte, size int) {
 	FixSizedTypesCodec.EncodeInt(frame.Content, 1, size)
 }
 
-func EncodeListCNFixedSize(message *proto.ClientMessage, items []interface{}, itemSizeInBytes int, encoder FixSizeEncoder) {
+func EncodeListCNFixedSize(message *proto.ClientMessage, items []interface{}, itemSizeInBytes int, encoder func ([]byte, int32, interface{})) {
 	total := 0
 	nonNull := 0
 
@@ -789,7 +786,6 @@ func EncodeListCNFixedSize(message *proto.ClientMessage, items []interface{}, it
 	} else {
 		EncodeCNFixedSizeHeader(frame, TYPE_MIXED, total)
 
-
 		bitmaskPosition := HEADER_SIZE
 		nextItemPosition := bitmaskPosition + proto.ByteSizeInBytes
 
@@ -798,7 +794,7 @@ func EncodeListCNFixedSize(message *proto.ClientMessage, items []interface{}, it
 
 		for _, item := range items {
 			if item != nil {
-				bitmask = bitmask | 1 << trackedItems
+				bitmask = bitmask | 1<<trackedItems
 				encoder(frame.Content, int32(nextItemPosition), item)
 				nextItemPosition += itemSizeInBytes
 			}
@@ -817,6 +813,7 @@ func EncodeListCNFixedSize(message *proto.ClientMessage, items []interface{}, it
 	}
 	message.AddFrame(frame)
 }
+
 
 func EncodeListCNBoolean(message *proto.ClientMessage, items []interface{}) {
 	EncodeListCNFixedSize(message, items, proto.BooleanSizeInBytes, FixSizedTypesCodec.EncodeBoolean)
@@ -844,6 +841,38 @@ func EncodeListCNFloat(message *proto.ClientMessage, items []interface{}) {
 
 func EncodeListCNDouble(message *proto.ClientMessage, items []interface{}) {
 	EncodeListCNFixedSize(message, items, proto.DoubleSizeInBytes, FixSizedTypesCodec.EncodeDouble)
+}
+func DecodeListCNFixedSize(frameIterator *proto.ForwardFrameIterator, itemSizeInBytes int, decoder interface{}) []serialization.Data {
+
+}
+
+
+func DecodeListCNBoolean(frameIterator *proto.ForwardFrameIterator) []serialization.Data {
+	return DecodeListCNFixedSize(frameIterator, proto.BooleanSizeInBytes, FixSizedTypesCodec.DecodeBoolean)
+}
+
+func DecodeListCNByte(frameIterator *proto.ForwardFrameIterator) []serialization.Data {
+	return DecodeListCNFixedSize(frameIterator, proto.ByteSizeInBytes, FixSizedTypesCodec.DecodeByte)
+}
+
+func DecodeListCNShort(frameIterator *proto.ForwardFrameIterator) []serialization.Data {
+	return DecodeListCNFixedSize(frameIterator, proto.ShortSizeInBytes, FixSizedTypesCodec.DecodeShortInt)
+}
+
+func DecodeListCNInteger(frameIterator *proto.ForwardFrameIterator) []serialization.Data {
+	return DecodeListCNFixedSize(frameIterator, proto.IntSizeInBytes, FixSizedTypesCodec.DecodeInt)
+}
+
+func DecodeListCNLong(frameIterator *proto.ForwardFrameIterator) []serialization.Data {
+	return DecodeListCNFixedSize(frameIterator, proto.LongSizeInBytes, FixSizedTypesCodec.DecodeLong)
+}
+
+func DecodeListCNFloat(frameIterator *proto.ForwardFrameIterator) []serialization.Data {
+	return DecodeListCNFixedSize(frameIterator, proto.FloatSizeInBytes, FixSizedTypesCodec.DecodeFloat)
+}
+
+func DecodeListCNDouble(frameIterator *proto.ForwardFrameIterator) []serialization.Data {
+	return DecodeListCNFixedSize(frameIterator, proto.DoubleSizeInBytes, FixSizedTypesCodec.DecodeDouble)
 }
 
 func EncodeSqlPage(message *proto.ClientMessage, sqlPage sql.Page) {
@@ -915,4 +944,88 @@ func EncodeSqlPage(message *proto.ClientMessage, sqlPage sql.Page) {
 		}
 	}
 
+}
+
+
+func DecodeSqlPage(frameIterator *proto.ForwardFrameIterator) sql.Page {
+	// Begin frame
+	frameIterator.Next()
+
+	// Read the "last" flag
+	isLast := frameIterator.Next().Content[0] == 1
+
+	// Read column types
+	columnTypeIds := DecodeListInteger(frameIterator)
+	columnTypes := make([]sql.ColumnType, len(columnTypeIds))
+
+	// Read columns
+
+	columns := make([][]serialization.Data, len(columnTypeIds))
+
+	for _, v := range columnTypeIds {
+		columnType := sql.ColumnType(v)
+		switch columnType {
+		case sql.VARCHAR:
+			columns = append(columns, DecodeListMultiFrameForDataContainsNullable(frameIterator))
+		case sql.BOOLEAN:
+			columns = append(columns, DecodeListCNBoolean(frameIterator))
+		case sql.TINYINT:
+			columns = append(columns, DecodeListCNBoolean(frameIterator))
+
+		case sql.SMALLINT:
+			columns = append(columns, DecodeListCNBoolean(frameIterator))
+
+		case sql.INTEGER:
+			columns = append(columns, DecodeListCNBoolean(frameIterator))
+
+		case sql.BIGINT:
+			columns = append(columns,DecodeListCNBoolean(frameIterator))
+
+		case sql.REAL:
+			columns = append(columns, DecodeListCNBoolean(frameIterator))
+
+		case sql.DOUBLE:
+			columns = append(columns, DecodeListCNBoolean(frameIterator))
+
+		case sql.DATE:
+			// todo
+		case sql.TIME:
+			// todo
+
+		case sql.TIMESTAMP:
+			// todo
+
+		case sql.TIMESTAMP_WITH_TIME_ZONE:
+			// todo
+
+		case sql.DECIMAL:
+			// todo
+
+		case sql.NULL:
+			frame := frameIterator.Next()
+			size := FixSizedTypesCodec.DecodeInt(frame.Content, 0)
+
+			column := make([]serialization.Data, size)
+
+			for i := 0; i < int(size); i++ {
+				column = append(column, nil)
+			}
+
+			columns = append(columns, column)
+
+		case sql.OBJECT:
+
+			columns = append(columns, DecodeListMultiFrameForDataContainsNullable(frameIterator))
+
+		default:
+			panic("Unknown type " + columnType.String())
+
+		}
+
+		columnTypes = append(columnTypes, columnType)
+
+	}
+	CodecUtil.FastForwardToEndFrame(frameIterator)
+
+	return sql.NewPageFromColumns(columnTypes, columns, isLast)
 }
