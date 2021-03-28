@@ -26,6 +26,20 @@ type codecUtil struct{}
 
 var CodecUtil codecUtil
 
+func (codecUtil) DecodeNullableForSqlError(frameIterator *proto.ForwardFrameIterator) sql.Error {
+	if CodecUtil.NextFrameIsNullFrame(frameIterator) {
+		return sql.Error{}
+	}
+	return DecodeSqlError(frameIterator)
+}
+
+func (codecUtil) DecodeNullableForSqlPage(frameIterator *proto.ForwardFrameIterator) sql.Page {
+	if CodecUtil.NextFrameIsNullFrame(frameIterator) {
+		return sql.Page{}
+	}
+	return DecodeSqlPage(frameIterator)
+}
+
 func (codecUtil) FastForwardToEndFrame(frameIterator *proto.ForwardFrameIterator) {
 	numberOfExpectedEndFrames := 1
 	var frame *proto.Frame
