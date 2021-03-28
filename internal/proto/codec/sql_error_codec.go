@@ -12,13 +12,13 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 package codec
 
 import (
     "github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
     "github.com/hazelcast/hazelcast-go-client/v4/internal"
-    "github.com/hazelcast/hazelcast-go-client/v4/internalsql/"
+    "github.com/hazelcast/hazelcast-go-client/v4/internal/sql"
 )
 
 
