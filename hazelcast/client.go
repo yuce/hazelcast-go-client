@@ -3,6 +3,7 @@ package hazelcast
 import (
 	"fmt"
 	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/cluster"
+	"github.com/hazelcast/hazelcast-go-client/v4/internal/sql"
 	"sync/atomic"
 	"time"
 
@@ -34,6 +35,8 @@ type Client interface {
 
 	// access to data structures
 	GetMap(name string) (hztypes.Map, error)
+
+	GetSqlService() sql.Service
 }
 
 type clientImpl struct {
