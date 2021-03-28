@@ -2,7 +2,7 @@ package sql
 
 import "fmt"
 
-type ColumnType int8
+type ColumnType int32
 
 const (
 	VARCHAR ColumnType = iota

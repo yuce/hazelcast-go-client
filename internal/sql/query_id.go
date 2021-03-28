@@ -41,6 +41,6 @@ func (q *QueryId) SetMemberIdHigh(memberIdHigh uint64) {
 	q.memberIdHigh = memberIdHigh
 }
 
-func NewQueryId(memberIdHigh uint64, memberIdLow uint64, localIdHigh uint64, localIdLow uint64) QueryId {
-	return QueryId{memberIdHigh: memberIdHigh, memberIdLow: memberIdLow, localIdHigh: localIdHigh, localIdLow: localIdLow}
+func NewQueryId(memberIdHigh int64, memberIdLow int64, localIdHigh int64, localIdLow int64) QueryId {
+	return QueryId{memberIdHigh: uint64(memberIdHigh), memberIdLow: uint64(memberIdLow), localIdHigh: uint64(localIdHigh), localIdLow: uint64(localIdLow)}
 }

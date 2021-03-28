@@ -51,9 +51,10 @@ func DecodeSqlColumnMetadata(frameIterator *proto.ForwardFrameIterator) sql.Colu
     initialFrame := frameIterator.Next()
     _type := FixSizedTypesCodec.DecodeInt(initialFrame.Content, SqlColumnMetadataCodecTypeFieldOffset)
     isNullableExists := false
-    let nullable = false    if (initialFrame.content.length >= NULLABLE_OFFSET + BitsUtil.BOOLEAN_SIZE_IN_BYTES) {
-    nullable = FixSizedTypesCodec.DecodeBoolean(initialFrame.Content, NULLABLE_OFFSET)
-    isNullableExists = true
+    nullable := false
+    if len(initialFrame.Content) >= SqlColumnMetadataCodecNullableFieldOffset + proto.BooleanSizeInBytes {
+        nullable = FixSizedTypesCodec.DecodeBoolean(initialFrame.Content, SqlColumnMetadataCodecNullableFieldOffset)
+        isNullableExists = true
     }
 
     name := DecodeString(frameIterator)

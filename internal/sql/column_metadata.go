@@ -6,8 +6,8 @@ type ColumnMetadata struct {
 	nullable   bool
 }
 
-func NewColumnMetadata(name string, columnType ColumnType, nullable bool) ColumnMetadata {
-	return ColumnMetadata{name: name, columnType: columnType, nullable: nullable}
+func NewColumnMetadata(name string, columnType int32, isNullableExists bool, nullable bool) ColumnMetadata {
+	return ColumnMetadata{name: name, columnType: ColumnType(columnType), nullable: nullable}
 }
 
 func (s *ColumnMetadata) Nullable() bool {
@@ -18,7 +18,7 @@ func (s *ColumnMetadata) SetNullable(nullable bool) {
 	s.nullable = nullable
 }
 
-func (s *ColumnMetadata) ColumnType() ColumnType {
+func (s *ColumnMetadata) Type() ColumnType {
 	return s.columnType
 }
 
