@@ -13,12 +13,12 @@ import (
 
 type Service struct {
 	proxy proxy.Impl
-	connectionManager icluster.ConnectionManager
+	connectionManager *icluster.ConnectionManager
 	clusterService icluster.Service
 }
 
-func NewSqlService(connectionManager icluster.ConnectionManager, clusterService icluster.Service) Service {
-	return Service{connectionManager: connectionManager, clusterService: clusterService}
+func NewSqlService(connectionManager *icluster.ConnectionManager, clusterService icluster.Service) *Service {
+	return &Service{connectionManager: connectionManager, clusterService: clusterService}
 }
 
 func (s *Service) Execute(command string) bool {
