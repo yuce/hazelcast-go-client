@@ -12,7 +12,7 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
- */
+*/
 package codec
 
 import (
@@ -34,7 +34,7 @@ type sqlerrorCodec struct {}
 var SqlErrorCodec sqlerrorCodec
 */
 
-func EncodeSqlError(clientMessage *proto.ClientMessage, sqlError sql.SqlError){
+func EncodeSqlError(clientMessage *proto.ClientMessage, sqlError sql.Error){
     clientMessage.AddFrame(proto.BeginFrame.Copy())
     initialFrame := proto.NewFrame(make([]byte,SqlErrorCodecOriginatingMemberIdInitialFrameSize))
     FixSizedTypesCodec.EncodeInt(initialFrame.Content, SqlErrorCodecCodeFieldOffset, int32(sqlError.Code()))
@@ -46,7 +46,7 @@ func EncodeSqlError(clientMessage *proto.ClientMessage, sqlError sql.SqlError){
     clientMessage.AddFrame(proto.EndFrame.Copy())
 }
 
-func DecodeSqlError(frameIterator *proto.ForwardFrameIterator) sql.SqlError {
+func DecodeSqlError(frameIterator *proto.ForwardFrameIterator) sql.Error {
     // begin frame
     frameIterator.Next()
     initialFrame := frameIterator.Next()
@@ -55,5 +55,5 @@ func DecodeSqlError(frameIterator *proto.ForwardFrameIterator) sql.SqlError {
 
     message := CodecUtil.DecodeNullableForString(frameIterator)
     CodecUtil.FastForwardToEndFrame(frameIterator)
-    return sql.NewSqlError(code, message, originatingMemberId)
+    return sql.NewError(code, message, originatingMemberId)
 }

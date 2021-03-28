@@ -12,7 +12,7 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
- */
+*/
 package codec
 
 import (
@@ -35,7 +35,7 @@ type sqlqueryidCodec struct {}
 var SqlQueryIdCodec sqlqueryidCodec
 */
 
-func EncodeSqlQueryId(clientMessage *proto.ClientMessage, sqlQueryId sql.SqlQueryId){
+func EncodeSqlQueryId(clientMessage *proto.ClientMessage, sqlQueryId sql.QueryId){
     clientMessage.AddFrame(proto.BeginFrame.Copy())
     initialFrame := proto.NewFrame(make([]byte,SqlQueryIdCodecLocalIdLowInitialFrameSize))
     FixSizedTypesCodec.EncodeLong(initialFrame.Content, SqlQueryIdCodecMemberIdHighFieldOffset, int64(sqlQueryId.MemberIdHigh()))
@@ -47,7 +47,7 @@ func EncodeSqlQueryId(clientMessage *proto.ClientMessage, sqlQueryId sql.SqlQuer
     clientMessage.AddFrame(proto.EndFrame.Copy())
 }
 
-func DecodeSqlQueryId(frameIterator *proto.ForwardFrameIterator) sql.SqlQueryId {
+func DecodeSqlQueryId(frameIterator *proto.ForwardFrameIterator) sql.QueryId {
     // begin frame
     frameIterator.Next()
     initialFrame := frameIterator.Next()
@@ -56,5 +56,5 @@ func DecodeSqlQueryId(frameIterator *proto.ForwardFrameIterator) sql.SqlQueryId 
     localIdHigh := FixSizedTypesCodec.DecodeLong(initialFrame.Content, SqlQueryIdCodecLocalIdHighFieldOffset)
     localIdLow := FixSizedTypesCodec.DecodeLong(initialFrame.Content, SqlQueryIdCodecLocalIdLowFieldOffset)
     CodecUtil.FastForwardToEndFrame(frameIterator)
-    return sql.NewSqlQueryId(memberIdHigh, memberIdLow, localIdHigh, localIdLow)
+    return sql.NewQueryId(memberIdHigh, memberIdLow, localIdHigh, localIdLow)
 }

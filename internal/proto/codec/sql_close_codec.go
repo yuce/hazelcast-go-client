@@ -31,7 +31,7 @@ const(
 
 // Closes server-side query cursor.
 
-func EncodeSqlCloseRequest(queryId sql.SqlQueryId) *proto.ClientMessage {
+func EncodeSqlCloseRequest(queryId sql.QueryId) *proto.ClientMessage {
     clientMessage := proto.NewClientMessageForEncode()
     clientMessage.SetRetryable(false)
 

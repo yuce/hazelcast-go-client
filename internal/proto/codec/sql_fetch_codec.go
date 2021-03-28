@@ -32,7 +32,7 @@ const(
 
 // Fetches the next row page.
 
-func EncodeSqlFetchRequest(queryId sql.SqlQueryId, cursorBufferSize int32) *proto.ClientMessage {
+func EncodeSqlFetchRequest(queryId sql.QueryId, cursorBufferSize int32) *proto.ClientMessage {
     clientMessage := proto.NewClientMessageForEncode()
     clientMessage.SetRetryable(false)
 
@@ -47,7 +47,7 @@ func EncodeSqlFetchRequest(queryId sql.SqlQueryId, cursorBufferSize int32) *prot
     return clientMessage
 }
 
-func DecodeSqlFetchResponse(clientMessage *proto.ClientMessage) (rowPage sql.SqlPage, error sql.SqlError) {
+func DecodeSqlFetchResponse(clientMessage *proto.ClientMessage) (rowPage sql.Page, error sql.Error) {
     frameIterator := clientMessage.FrameIterator()
     frameIterator.Next()
 

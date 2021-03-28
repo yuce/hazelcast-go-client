@@ -12,7 +12,7 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
- */
+*/
 package codec
 
 import (
@@ -33,7 +33,7 @@ type sqlcolumnmetadataCodec struct {}
 var SqlColumnMetadataCodec sqlcolumnmetadataCodec
 */
 
-func EncodeSqlColumnMetadata(clientMessage *proto.ClientMessage, sqlColumnMetadata sql.SqlColumnMetadata){
+func EncodeSqlColumnMetadata(clientMessage *proto.ClientMessage, sqlColumnMetadata sql.ColumnMetadata){
     clientMessage.AddFrame(proto.BeginFrame.Copy())
     initialFrame := proto.NewFrame(make([]byte,SqlColumnMetadataCodecNullableInitialFrameSize))
     FixSizedTypesCodec.EncodeInt(initialFrame.Content, SqlColumnMetadataCodecTypeFieldOffset, int32(sqlColumnMetadata.Type()))
@@ -45,18 +45,18 @@ func EncodeSqlColumnMetadata(clientMessage *proto.ClientMessage, sqlColumnMetada
     clientMessage.AddFrame(proto.EndFrame.Copy())
 }
 
-func DecodeSqlColumnMetadata(frameIterator *proto.ForwardFrameIterator) sql.SqlColumnMetadata {
+func DecodeSqlColumnMetadata(frameIterator *proto.ForwardFrameIterator) sql.ColumnMetadata {
     // begin frame
     frameIterator.Next()
     initialFrame := frameIterator.Next()
     _type := FixSizedTypesCodec.DecodeInt(initialFrame.Content, SqlColumnMetadataCodecTypeFieldOffset)
     isNullableExists := false
     let nullable = false    if (initialFrame.content.length >= NULLABLE_OFFSET + BitsUtil.BOOLEAN_SIZE_IN_BYTES) {
-        nullable = FixSizedTypesCodec.DecodeBoolean(initialFrame.Content, NULLABLE_OFFSET)
-        isNullableExists = true
+    nullable = FixSizedTypesCodec.DecodeBoolean(initialFrame.Content, NULLABLE_OFFSET)
+    isNullableExists = true
     }
 
     name := DecodeString(frameIterator)
     CodecUtil.FastForwardToEndFrame(frameIterator)
-    return sql.NewSqlColumnMetadata(name, _type, isNullableExists, nullable)
+    return sql.NewColumnMetadata(name, _type, isNullableExists, nullable)
 }

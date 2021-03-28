@@ -36,7 +36,7 @@ const(
 
 // Starts execution of an SQL query (as of 4.2).
 
-func EncodeSqlExecuteRequest(sql string, parameters []serialization.Data, timeoutMillis int64, cursorBufferSize int32, schema string, expectedResultType byte, queryId sql.SqlQueryId) *proto.ClientMessage {
+func EncodeSqlExecuteRequest(sql string, parameters []serialization.Data, timeoutMillis int64, cursorBufferSize int32, schema string, expectedResultType byte, queryId sql.QueryId) *proto.ClientMessage {
     clientMessage := proto.NewClientMessageForEncode()
     clientMessage.SetRetryable(false)
 
@@ -56,7 +56,7 @@ func EncodeSqlExecuteRequest(sql string, parameters []serialization.Data, timeou
     return clientMessage
 }
 
-func DecodeSqlExecuteResponse(clientMessage *proto.ClientMessage) (rowMetadata []sql.SqlColumnMetadata, rowPage sql.SqlPage, updateCount int64, error sql.SqlError) {
+func DecodeSqlExecuteResponse(clientMessage *proto.ClientMessage) (rowMetadata []sql.ColumnMetadata, rowPage sql.Page, updateCount int64, error sql.Error) {
     frameIterator := clientMessage.FrameIterator()
     initialFrame := frameIterator.Next()
 
