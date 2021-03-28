@@ -1028,30 +1028,30 @@ func DecodeSqlPage(frameIterator *proto.ForwardFrameIterator) sql.Page {
 
 	columns := make([][]serialization.Data, len(columnTypeIds))
 
-	for _, v := range columnTypeIds {
+	for i, v := range columnTypeIds {
 		columnType := sql.ColumnType(v)
 		switch columnType {
 		case sql.VARCHAR:
-			columns = append(columns, DecodeListMultiFrameForDataContainsNullable(frameIterator))
+			columns[i] = DecodeListMultiFrameForDataContainsNullable(frameIterator)
 		case sql.BOOLEAN:
-			columns = append(columns, DecodeListCNBoolean(frameIterator))
+			columns[i] =  DecodeListCNBoolean(frameIterator)
 		case sql.TINYINT:
-			columns = append(columns, DecodeListCNByte(frameIterator))
+			columns[i] = DecodeListCNByte(frameIterator)
 
 		case sql.SMALLINT:
-			columns = append(columns, DecodeListCNShort(frameIterator))
+			columns[i] = DecodeListCNShort(frameIterator)
 
 		case sql.INTEGER:
-			columns = append(columns, DecodeListCNInteger(frameIterator))
+			columns[i] = DecodeListCNInteger(frameIterator)
 
 		case sql.BIGINT:
-			columns = append(columns, DecodeListCNLong(frameIterator))
+			columns[i] = DecodeListCNLong(frameIterator)
 
 		case sql.REAL:
-			columns = append(columns, DecodeListCNFloat(frameIterator))
+			columns[i] = DecodeListCNFloat(frameIterator)
 
 		case sql.DOUBLE:
-			columns = append(columns, DecodeListCNDouble(frameIterator))
+			columns[i] = DecodeListCNDouble(frameIterator)
 
 		case sql.DATE:
 			// todo
@@ -1073,15 +1073,15 @@ func DecodeSqlPage(frameIterator *proto.ForwardFrameIterator) sql.Page {
 
 			column := make([]serialization.Data, size)
 
-			for i := 0; i < int(size); i++ {
-				column = append(column, nil)
+			for j := 0; j < int(size); j++ {
+				column[j] = nil
 			}
 
-			columns = append(columns, column)
+			columns[i] = column
 
 		case sql.OBJECT:
 
-			columns = append(columns, DecodeListMultiFrameForDataContainsNullable(frameIterator))
+			columns[i] = DecodeListMultiFrameForDataContainsNullable(frameIterator)
 
 		default:
 			panic("Unknown type " + columnType.String())

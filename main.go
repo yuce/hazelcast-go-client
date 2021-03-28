@@ -13,5 +13,10 @@ func main(){
 		log.Fatal(err)
 	}
 
-	client.SqlService().Execute("SELECT * FROM TABLE(generate_series(1,3));")
+	someMap, _ := client.GetMap("someMap2")
+
+	_, _ = someMap.Put("selam", 1)
+
+
+	client.SqlService().Execute("SELECT * FROM someMap2")
 }

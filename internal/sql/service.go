@@ -6,19 +6,19 @@ import (
 	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/sql"
 	icluster "github.com/hazelcast/hazelcast-go-client/v4/internal/cluster"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal"
+	"github.com/hazelcast/hazelcast-go-client/v4/internal/invocation"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto/codec"
-	"github.com/hazelcast/hazelcast-go-client/v4/internal/proxy"
 )
 
 type Service struct {
-	proxy proxy.Impl
+	invocationService *invocation.ServiceImpl
 	connectionManager *icluster.ConnectionManager
 	clusterService icluster.Service
 }
 
-func NewSqlService(connectionManager *icluster.ConnectionManager, clusterService icluster.Service) *Service {
-	return &Service{connectionManager: connectionManager, clusterService: clusterService}
+func NewSqlService(connectionManager *icluster.ConnectionManager, clusterService icluster.Service, invocationService *invocation.ServiceImpl) *Service {
+	return &Service{connectionManager: connectionManager, clusterService: clusterService, invocationService: invocationService}
 }
 
 func (s *Service) Execute(command string) bool {
@@ -51,25 +51,24 @@ func (s *Service) Execute(command string) bool {
 
 	requestMessage := codec.EncodeSqlExecuteRequest(command, nil, -1, 4096, "", 0, queryId)
 
-	fmt.Println(requestMessage)
 
-	go func(){
-		s.invoke(requestMessage, memberAddress)
-	}()
+	v, _ := s.invoke(requestMessage, memberAddress)
+
+	rowM, page, updateCount, err := codec.DecodeSqlExecuteResponse(v)
+
+	fmt.Print("Rows Metadata:")
+	fmt.Println(rowM)
+	fmt.Print("Page:")
+	fmt.Println(page.ColumnValuesForServer(0))
+	fmt.Print("Update c:")
+	fmt.Println(updateCount)
+	fmt.Print("Error:")
+	fmt.Println(err)
 
 	return true
 }
 
 func (s *Service) invoke(request *proto.ClientMessage, address pubcluster.Address) (*proto.ClientMessage, error) {
-	inv := s.proxy.InvocationFactory.NewInvocationOnTarget(request, address)
-	s.proxy.RequestCh <- inv
+	inv := s.invocationService.SendInvocation(invocation.NewImpl(request, 0, address, -1))
 	return inv.Get()
-	//select {
-	//case p.requestCh <- inv:
-	//	return inv.GetWithTimeout(100 * time.Millisecond)
-	//case <-time.After(100 * time.Millisecond):
-	//	return nil, errors.New("timeout")
-
-	//}
-
 }
