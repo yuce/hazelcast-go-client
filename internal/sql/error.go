@@ -2,7 +2,7 @@ package sql
 
 import "github.com/hazelcast/hazelcast-go-client/v4/internal"
 
-type SqlError struct {
+type Error struct {
 
 	code int32
 	message string
@@ -10,30 +10,30 @@ type SqlError struct {
 
 }
 
-func NewSqlError(code int32, message string, originatingMemberId internal.UUID) *SqlError {
-	return &SqlError{code: code, message: message, originatingMemberId: originatingMemberId}
+func NewError(code int32, message string, originatingMemberId internal.UUID) Error {
+	return Error{code: code, message: message, originatingMemberId: originatingMemberId}
 }
 
-func (s *SqlError) OriginatingMemberId() internal.UUID {
+func (s *Error) OriginatingMemberId() internal.UUID {
 	return s.originatingMemberId
 }
 
-func (s *SqlError) SetOriginatingMemberId(originatingMemberId internal.UUID) {
+func (s *Error) SetOriginatingMemberId(originatingMemberId internal.UUID) {
 	s.originatingMemberId = originatingMemberId
 }
 
-func (s *SqlError) Message() string {
+func (s *Error) Message() string {
 	return s.message
 }
 
-func (s *SqlError) SetMessage(message string) {
+func (s *Error) SetMessage(message string) {
 	s.message = message
 }
 
-func (s *SqlError) Code() int32 {
+func (s *Error) Code() int32 {
 	return s.code
 }
 
-func (s *SqlError) SetCode(code int32) {
+func (s *Error) SetCode(code int32) {
 	s.code = code
 }
