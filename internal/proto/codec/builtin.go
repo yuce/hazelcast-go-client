@@ -762,7 +762,7 @@ func EncodeCNFixedSizeHeader(frame *proto.Frame, _type byte, size int) {
 	FixSizedTypesCodec.EncodeInt(frame.Content, 1, size)
 }
 
-func EncodeListCNFixedSize(message *proto.ClientMessage, items []interface{}, itemSizeInBytes int, encoder func ([]byte, int32, interface{})) {
+func EncodeListCNFixedSize(message *proto.ClientMessage, items []interface{}, itemSizeInBytes int, encoder func([]byte, int32, interface{})) {
 	total := 0
 	nonNull := 0
 
@@ -814,7 +814,6 @@ func EncodeListCNFixedSize(message *proto.ClientMessage, items []interface{}, it
 	message.AddFrame(frame)
 }
 
-
 func EncodeListCNBoolean(message *proto.ClientMessage, items []interface{}) {
 	EncodeListCNFixedSize(message, items, proto.BooleanSizeInBytes, FixSizedTypesCodec.EncodeBoolean)
 }
@@ -842,37 +841,74 @@ func EncodeListCNFloat(message *proto.ClientMessage, items []interface{}) {
 func EncodeListCNDouble(message *proto.ClientMessage, items []interface{}) {
 	EncodeListCNFixedSize(message, items, proto.DoubleSizeInBytes, FixSizedTypesCodec.EncodeDouble)
 }
-func DecodeListCNFixedSize(frameIterator *proto.ForwardFrameIterator, itemSizeInBytes int, decoder interface{}) []serialization.Data {
 
+func DecodeListCNFixedSize(frame *proto.Frame, itemSizeInBytes int) []serialization.Data {
+	_type := FixSizedTypesCodec.DecodeByte(frame.Content, 0)
+	count := int(FixSizedTypesCodec.DecodeInt(frame.Content, 1))
+	res := make([]serialization.Data, count)
+	switch _type {
+	case TYPE_NULL_ONLY:
+		for i := 0; i < int(count); i++ {
+			res = append(res, nil)
+		}
+	case TYPE_NOT_NULL_ONLY:
+		for i := 0; i < int(count); i++ {
+			res = append(res, serialization.NewSerializationData(frame.Content[HEADER_SIZE+i*itemSizeInBytes:HEADER_SIZE+(i+1)*itemSizeInBytes]))
+		}
+	default:
+		if _type != TYPE_MIXED {
+			panic("Unexpected header type")
+		}
+		position := HEADER_SIZE
+		readCount := 0
+
+		for readCount < count {
+			bitmask := FixSizedTypesCodec.DecodeByte(frame.Content, int32(position))
+			position++
+			for i := 0; i < ITEMS_PER_BITMASK && readCount < count; i++ {
+				mask := 1 << i
+				if (bitmask & mask) == mask {
+					res = append(res, serialization.NewSerializationData(frame.Content[position:position+itemSizeInBytes]))
+					position += itemSizeInBytes
+				} else {
+					res = append(res, nil)
+				}
+				readCount++
+			}
+		}
+		if readCount != len(res) {
+			panic("Reading error")
+		}
+	}
+	return res
 }
 
-
 func DecodeListCNBoolean(frameIterator *proto.ForwardFrameIterator) []serialization.Data {
-	return DecodeListCNFixedSize(frameIterator, proto.BooleanSizeInBytes, FixSizedTypesCodec.DecodeBoolean)
+	return DecodeListCNFixedSize(frameIterator.Next(), proto.BooleanSizeInBytes)
 }
 
 func DecodeListCNByte(frameIterator *proto.ForwardFrameIterator) []serialization.Data {
-	return DecodeListCNFixedSize(frameIterator, proto.ByteSizeInBytes, FixSizedTypesCodec.DecodeByte)
+	return DecodeListCNFixedSize(frameIterator.Next(), proto.ByteSizeInBytes)
 }
 
 func DecodeListCNShort(frameIterator *proto.ForwardFrameIterator) []serialization.Data {
-	return DecodeListCNFixedSize(frameIterator, proto.ShortSizeInBytes, FixSizedTypesCodec.DecodeShortInt)
+	return DecodeListCNFixedSize(frameIterator.Next(), proto.ShortSizeInBytes)
 }
 
 func DecodeListCNInteger(frameIterator *proto.ForwardFrameIterator) []serialization.Data {
-	return DecodeListCNFixedSize(frameIterator, proto.IntSizeInBytes, FixSizedTypesCodec.DecodeInt)
+	return DecodeListCNFixedSize(frameIterator.Next(), proto.IntSizeInBytes)
 }
 
 func DecodeListCNLong(frameIterator *proto.ForwardFrameIterator) []serialization.Data {
-	return DecodeListCNFixedSize(frameIterator, proto.LongSizeInBytes, FixSizedTypesCodec.DecodeLong)
+	return DecodeListCNFixedSize(frameIterator.Next(), proto.LongSizeInBytes)
 }
 
 func DecodeListCNFloat(frameIterator *proto.ForwardFrameIterator) []serialization.Data {
-	return DecodeListCNFixedSize(frameIterator, proto.FloatSizeInBytes, FixSizedTypesCodec.DecodeFloat)
+	return DecodeListCNFixedSize(frameIterator.Next(), proto.FloatSizeInBytes)
 }
 
 func DecodeListCNDouble(frameIterator *proto.ForwardFrameIterator) []serialization.Data {
-	return DecodeListCNFixedSize(frameIterator, proto.DoubleSizeInBytes, FixSizedTypesCodec.DecodeDouble)
+	return DecodeListCNFixedSize(frameIterator.Next(), proto.DoubleSizeInBytes)
 }
 
 func EncodeSqlPage(message *proto.ClientMessage, sqlPage sql.Page) {
@@ -946,7 +982,6 @@ func EncodeSqlPage(message *proto.ClientMessage, sqlPage sql.Page) {
 
 }
 
-
 func DecodeSqlPage(frameIterator *proto.ForwardFrameIterator) sql.Page {
 	// Begin frame
 	frameIterator.Next()
@@ -970,22 +1005,22 @@ func DecodeSqlPage(frameIterator *proto.ForwardFrameIterator) sql.Page {
 		case sql.BOOLEAN:
 			columns = append(columns, DecodeListCNBoolean(frameIterator))
 		case sql.TINYINT:
-			columns = append(columns, DecodeListCNBoolean(frameIterator))
+			columns = append(columns, DecodeListCNByte(frameIterator))
 
 		case sql.SMALLINT:
-			columns = append(columns, DecodeListCNBoolean(frameIterator))
+			columns = append(columns, DecodeListCNShort(frameIterator))
 
 		case sql.INTEGER:
-			columns = append(columns, DecodeListCNBoolean(frameIterator))
+			columns = append(columns, DecodeListCNInteger(frameIterator))
 
 		case sql.BIGINT:
-			columns = append(columns,DecodeListCNBoolean(frameIterator))
+			columns = append(columns, DecodeListCNLong(frameIterator))
 
 		case sql.REAL:
-			columns = append(columns, DecodeListCNBoolean(frameIterator))
+			columns = append(columns, DecodeListCNFloat(frameIterator))
 
 		case sql.DOUBLE:
-			columns = append(columns, DecodeListCNBoolean(frameIterator))
+			columns = append(columns, DecodeListCNDouble(frameIterator))
 
 		case sql.DATE:
 			// todo
@@ -1019,7 +1054,6 @@ func DecodeSqlPage(frameIterator *proto.ForwardFrameIterator) sql.Page {
 
 		default:
 			panic("Unknown type " + columnType.String())
-
 		}
 
 		columnTypes = append(columnTypes, columnType)
