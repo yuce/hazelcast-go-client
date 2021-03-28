@@ -36,7 +36,7 @@ type Client interface {
 	// access to data structures
 	GetMap(name string) (hztypes.Map, error)
 
-	GetSqlService() sql.Service
+	SqlService() *sql.Service
 }
 
 type clientImpl struct {
@@ -53,6 +53,7 @@ type clientImpl struct {
 	eventDispatcher   event.DispatchService
 	invocationHandler invocation.Handler
 	logger            logger.Logger
+	sqlService        *sql.Service
 
 	// state
 	started atomic.Value
@@ -86,6 +87,10 @@ func (c *clientImpl) Name() string {
 func (c *clientImpl) GetMap(name string) (hztypes.Map, error) {
 	c.ensureStarted()
 	return c.proxyManager.GetMap(name)
+}
+
+func (c *clientImpl) SqlService() *sql.Service {
+	return c.sqlService
 }
 
 func (c *clientImpl) Start() error {

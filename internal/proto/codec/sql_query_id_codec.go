@@ -17,7 +17,7 @@ package codec
 
 import (
     "github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
-    "github.com/hazelcast/hazelcast-go-client/v4/internal/sql"
+    "github.com/hazelcast/hazelcast-go-client/v4/hazelcast/sql"
 )
 
 

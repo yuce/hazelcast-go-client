@@ -3,20 +3,21 @@ package sql
 import (
 	"fmt"
 	pubcluster "github.com/hazelcast/hazelcast-go-client/v4/hazelcast/cluster"
-	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto/codec"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/sql"
+	icluster "github.com/hazelcast/hazelcast-go-client/v4/internal/cluster"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal"
-	"github.com/hazelcast/hazelcast-go-client/v4/internal/cluster"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
+	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto/codec"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proxy"
 )
 
 type Service struct {
 	proxy proxy.Impl
-	connectionManager cluster.ConnectionManager
-	clusterService cluster.Service
+	connectionManager icluster.ConnectionManager
+	clusterService icluster.Service
 }
 
-func NewSqlService(connectionManager cluster.ConnectionManager, clusterService cluster.Service) Service {
+func NewSqlService(connectionManager icluster.ConnectionManager, clusterService icluster.Service) Service {
 	return Service{connectionManager: connectionManager, clusterService: clusterService}
 }
 
@@ -45,7 +46,7 @@ func (s *Service) Execute(command string) bool {
 	}
 
 	localId := internal.NewUUID()
-	queryId := NewQueryId(memberId.MostSignificantBits(), memberId.LeastSignificantBits(), localId.MostSignificantBits(), localId.LeastSignificantBits())
+	queryId := sql.NewQueryId(int64(memberId.MostSignificantBits()), int64(memberId.LeastSignificantBits()), int64(localId.MostSignificantBits()), int64(localId.LeastSignificantBits()))
 
 
 	requestMessage := codec.EncodeSqlExecuteRequest(command, nil, -1, 4096, "", 0, queryId)

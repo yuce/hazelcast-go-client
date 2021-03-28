@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/hzerror"
 	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/hztypes"
-	"github.com/hazelcast/hazelcast-go-client/v4/internal/sql"
+	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/sql"
 	"math"
 	"strings"
 
@@ -897,7 +897,7 @@ func DecodeListCNFixedSize(frame *proto.Frame, itemSizeInBytes int) []serializat
 			bitmask := FixSizedTypesCodec.DecodeByte(frame.Content, int32(position))
 			position++
 			for i := 0; i < ITEMS_PER_BITMASK && readCount < count; i++ {
-				mask := 1 << i
+				mask := byte(1 << i)
 				if (bitmask & mask) == mask {
 					res = append(res, serialization.NewSerializationData(frame.Content[position:position+itemSizeInBytes]))
 					position += itemSizeInBytes
