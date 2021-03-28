@@ -612,6 +612,23 @@ func DecodeListMultiFrameForMemberInfo(frameIterator *proto.ForwardFrameIterator
 	return result
 }
 
+func DecodeNullableListMultiFrameForSqlColumnMetadata(frameIterator *proto.ForwardFrameIterator) []sql.ColumnMetadata {
+	if CodecUtil.NextFrameIsNullFrame(frameIterator) {
+		return nil
+	}
+	return DecodeListMultiFrameForSqlColumnMetadata(frameIterator)
+}
+
+func DecodeListMultiFrameForSqlColumnMetadata(frameIterator *proto.ForwardFrameIterator) []sql.ColumnMetadata {
+	result := make([]sql.ColumnMetadata, 0)
+	frameIterator.Next()
+	for !CodecUtil.NextFrameIsDataStructureEndFrame(frameIterator) {
+		result = append(result, DecodeSqlColumnMetadata(frameIterator))
+	}
+	frameIterator.Next()
+	return result
+}
+
 func DecodeListMultiFrameForStackTraceElement(frameIterator *proto.ForwardFrameIterator) []hzerror.StackTraceElement {
 	result := make([]hzerror.StackTraceElement, 0)
 	frameIterator.Next()

@@ -59,7 +59,6 @@ func EncodeSqlExecuteRequest(sql string, parameters []serialization.Data, timeou
 func DecodeSqlExecuteResponse(clientMessage *proto.ClientMessage) (rowMetadata []sql.ColumnMetadata, rowPage sql.Page, updateCount int64, error sql.Error) {
     frameIterator := clientMessage.FrameIterator()
     initialFrame := frameIterator.Next()
-
     updateCount = FixSizedTypesCodec.DecodeLong(initialFrame.Content, SqlExecuteResponseUpdateCountOffset)
     rowMetadata = DecodeNullableListMultiFrameForSqlColumnMetadata(frameIterator)
     rowPage = CodecUtil.DecodeNullableForSqlPage(frameIterator)
