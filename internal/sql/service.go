@@ -4,24 +4,26 @@ import (
 	"fmt"
 	pubcluster "github.com/hazelcast/hazelcast-go-client/v4/hazelcast/cluster"
 	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/sql"
-	icluster "github.com/hazelcast/hazelcast-go-client/v4/internal/cluster"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal"
+	icluster "github.com/hazelcast/hazelcast-go-client/v4/internal/cluster"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/invocation"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/proto/codec"
+	"github.com/hazelcast/hazelcast-go-client/v4/internal/serialization"
 )
 
 type Service struct {
-	invocationService *invocation.ServiceImpl
-	connectionManager *icluster.ConnectionManager
-	clusterService icluster.Service
+	serializationService serialization.Service
+	invocationService    *invocation.ServiceImpl
+	connectionManager    *icluster.ConnectionManager
+	clusterService       icluster.Service
 }
 
-func NewSqlService(connectionManager *icluster.ConnectionManager, clusterService icluster.Service, invocationService *invocation.ServiceImpl) *Service {
-	return &Service{connectionManager: connectionManager, clusterService: clusterService, invocationService: invocationService}
+func NewSqlService(connectionManager *icluster.ConnectionManager, clusterService icluster.Service, invocationService *invocation.ServiceImpl, serializationService serialization.Service) *Service {
+	return &Service{connectionManager: connectionManager, clusterService: clusterService, invocationService: invocationService, serializationService: serializationService}
 }
 
-func (s *Service) Execute(command string) bool {
+func (s *Service) Execute(command string) (sql.Result, error) {
 	fmt.Println("Executing SQL service: ", command)
 
 	membersMap := s.clusterService.GetMembersMap()
@@ -38,7 +40,6 @@ func (s *Service) Execute(command string) bool {
 		break
 	}
 
-
 	connection := s.connectionManager.GetConnectionForAddress(memberAddress)
 
 	if connection == nil {
@@ -48,24 +49,22 @@ func (s *Service) Execute(command string) bool {
 	localId := internal.NewUUID()
 	queryId := sql.NewQueryId(int64(memberId.MostSignificantBits()), int64(memberId.LeastSignificantBits()), int64(localId.MostSignificantBits()), int64(localId.LeastSignificantBits()))
 
-
 	requestMessage := codec.EncodeSqlExecuteRequest(command, nil, -1, 4096, "", 0, queryId)
-
 
 	v, _ := s.invoke(requestMessage, memberAddress)
 
-	rowM, page, updateCount, err := codec.DecodeSqlExecuteResponse(v)
+	colMetadataList, page, updateCount, err := codec.DecodeSqlExecuteResponse(v)
 
-	fmt.Print("Rows Metadata:")
-	fmt.Println(rowM)
-	fmt.Print("Page:")
-	fmt.Println(page.ColumnValuesForServer(0))
-	fmt.Print("Update c:")
-	fmt.Println(updateCount)
-	fmt.Print("Error:")
-	fmt.Println(err)
-
-	return true
+	var rowMetadata *sql.SqlRowMetadata
+	if colMetadataList != nil {
+		rowMetadata = sql.NewRowMetadata(colMetadataList)
+	} else {
+		rowMetadata = nil
+	}
+	if err.Message() != "" || err.Code() != 0 {
+		return nil, &err
+	}
+	return sql.NewResult(page, rowMetadata, updateCount, s.serializationService), nil
 }
 
 func (s *Service) invoke(request *proto.ClientMessage, address pubcluster.Address) (*proto.ClientMessage, error) {

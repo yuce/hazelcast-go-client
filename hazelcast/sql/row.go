@@ -1,12 +1,21 @@
 package sql
 
-type Row struct {
+type row interface {
+	columnCount() int
 }
 
-func (r Row) ValueAtIndex(index int) interface{} {
-	return nil
+type rowImpl struct {
+	values []interface{}
 }
 
-func (r Row) ValueWithName(name string) interface{} {
-	return nil
+func (r *rowImpl) columnCount() int {
+	return len(r.values)
+}
+
+func (r *rowImpl) ValueAtIndex(index int) interface{} {
+	return r.values[index]
+}
+
+func NewDataRow(values []interface{}) rowImpl {
+	return rowImpl{values: values}
 }

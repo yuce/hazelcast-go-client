@@ -1,13 +1,17 @@
 package sql
 
-import "github.com/hazelcast/hazelcast-go-client/v4/internal"
+import (
+	"github.com/hazelcast/hazelcast-go-client/v4/internal"
+)
 
 type Error struct {
-
-	code int32
-	message string
+	code                int32
+	message             string
 	originatingMemberId internal.UUID
+}
 
+func (s *Error) Error() string {
+	return s.message
 }
 
 func NewError(code int32, message string, originatingMemberId internal.UUID) Error {

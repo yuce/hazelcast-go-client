@@ -879,12 +879,12 @@ func DecodeListCNFixedSize(frame *proto.Frame, itemSizeInBytes int) []serializat
 	res := make([]serialization.Data, count)
 	switch _type {
 	case TYPE_NULL_ONLY:
-		for i := 0; i < int(count); i++ {
-			res = append(res, nil)
+		for i := 0; i < count; i++ {
+			res[i] = nil
 		}
 	case TYPE_NOT_NULL_ONLY:
-		for i := 0; i < int(count); i++ {
-			res = append(res, serialization.NewSerializationData(frame.Content[HEADER_SIZE+i*itemSizeInBytes:HEADER_SIZE+(i+1)*itemSizeInBytes]))
+		for i := 0; i < count; i++ {
+			res[i] = serialization.NewSerializationData(frame.Content[HEADER_SIZE+i*itemSizeInBytes : HEADER_SIZE+(i+1)*itemSizeInBytes])
 		}
 	default:
 		if _type != TYPE_MIXED {
@@ -899,10 +899,10 @@ func DecodeListCNFixedSize(frame *proto.Frame, itemSizeInBytes int) []serializat
 			for i := 0; i < ITEMS_PER_BITMASK && readCount < count; i++ {
 				mask := byte(1 << i)
 				if (bitmask & mask) == mask {
-					res = append(res, serialization.NewSerializationData(frame.Content[position:position+itemSizeInBytes]))
+					res[i] = serialization.NewSerializationData(frame.Content[position:position+itemSizeInBytes])
 					position += itemSizeInBytes
 				} else {
-					res = append(res, nil)
+					res[i] =  nil
 				}
 				readCount++
 			}
@@ -1034,7 +1034,7 @@ func DecodeSqlPage(frameIterator *proto.ForwardFrameIterator) sql.Page {
 		case sql.VARCHAR:
 			columns[i] = DecodeListMultiFrameForDataContainsNullable(frameIterator)
 		case sql.BOOLEAN:
-			columns[i] =  DecodeListCNBoolean(frameIterator)
+			columns[i] = DecodeListCNBoolean(frameIterator)
 		case sql.TINYINT:
 			columns[i] = DecodeListCNByte(frameIterator)
 
@@ -1087,7 +1087,7 @@ func DecodeSqlPage(frameIterator *proto.ForwardFrameIterator) sql.Page {
 			panic("Unknown type " + columnType.String())
 		}
 
-		columnTypes = append(columnTypes, columnType)
+		columnTypes[i] = columnType
 
 	}
 	CodecUtil.FastForwardToEndFrame(frameIterator)
