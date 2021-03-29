@@ -22,28 +22,10 @@ import (
 
 var nextId int32
 
-type Client interface {
-	// attributes
-	Name() string
-
-	// control
-	Start() error
-	Shutdown()
-
-	// events
-	ListenLifecycleStateChange(handler lifecycle.StateChangeHandler)
-
-	// access to data structures
-	GetMap(name string) (hztypes.Map, error)
-
-	SqlService() *sql.Service
-}
-
-type clientImpl struct {
+type Client struct {
 	// configuration
 	name          string
-	clusterName   string
-	networkConfig cluster.NetworkConfig
+	clusterConfig cluster.ClusterConfig
 
 	// components
 	proxyManager      proxy.Manager
@@ -59,7 +41,7 @@ type clientImpl struct {
 	started atomic.Value
 }
 
-func newClient(name string, config Config) *clientImpl {
+func newClient(name string, config Config) *Client {
 	id := atomic.AddInt32(&nextId, 1)
 	if name == "" {
 		name = fmt.Sprintf("hz.client_%d", id)
@@ -69,10 +51,9 @@ func newClient(name string, config Config) *clientImpl {
 		name = config.ClientName
 	}
 	clientLogger := logger.New()
-	impl := &clientImpl{
+	impl := &Client{
 		name:          name,
-		clusterName:   config.ClusterName,
-		networkConfig: config.Network,
+		clusterConfig: config.ClusterConfig,
 		logger:        clientLogger,
 	}
 	impl.started.Store(false)
@@ -80,26 +61,32 @@ func newClient(name string, config Config) *clientImpl {
 	return impl
 }
 
-func (c *clientImpl) Name() string {
+func (c *Client) Name() string {
 	return c.name
 }
 
-func (c *clientImpl) GetMap(name string) (hztypes.Map, error) {
+func (c *Client) GetMap(name string) (hztypes.Map, error) {
 	c.ensureStarted()
 	return c.proxyManager.GetMap(name)
 }
 
-func (c *clientImpl) SqlService() *sql.Service {
+func (c *Client) SqlService() *sql.Service {
 	return c.sqlService
 }
 
-func (c *clientImpl) Start() error {
+/*
+func (c *Client) ExecuteSQL(sql string) (sql.Result, error) {
+	return nil, nil
+}
+*/
+
+func (c *Client) Start() error {
 	// TODO: Recover from panics and return as error
 	if c.started.Load() == true {
 		return nil
 	}
 	c.eventDispatcher.Publish(ilifecycle.NewStateChangedImpl(lifecycle.StateStarting))
-	clusterServiceStartCh := c.clusterService.Start(c.networkConfig.SmartRouting())
+	clusterServiceStartCh := c.clusterService.Start(c.clusterConfig.SmartRouting())
 	c.partitionService.Start()
 	if err := c.connectionManager.Start(); err != nil {
 		return err
@@ -112,7 +99,7 @@ func (c *clientImpl) Start() error {
 
 // Shutdown disconnects the client from the cluster.
 // This call is blocking.
-func (c clientImpl) Shutdown() {
+func (c Client) Shutdown() {
 	if c.started.Load() != true {
 		return
 	}
@@ -125,7 +112,7 @@ func (c clientImpl) Shutdown() {
 
 // ListenLifecycleStateChange adds a lifecycle state change handler.
 // The handler must not block.
-func (c *clientImpl) ListenLifecycleStateChange(handler lifecycle.StateChangeHandler) {
+func (c *Client) ListenLifecycleStateChange(handler lifecycle.StateChangeHandler) {
 	// derive subscriptionID from the handler
 	subscriptionID := event.MakeSubscriptionID(handler)
 	c.eventDispatcher.SubscribeSync(ilifecycle.EventStateChanged, subscriptionID, func(event event.Event) {
@@ -137,22 +124,22 @@ func (c *clientImpl) ListenLifecycleStateChange(handler lifecycle.StateChangeHan
 	})
 }
 
-func (c *clientImpl) ensureStarted() {
+func (c *Client) ensureStarted() {
 	if c.started.Load() == false {
 		panic("client not started")
 	}
 }
 
-func (c *clientImpl) createComponents(config *Config) {
+func (c *Client) createComponents(config *Config) {
 	credentials := security.NewUsernamePasswordCredentials("dev", "dev-pass")
 	serializationService, err := serialization.NewService(serialization.NewConfig())
 	if err != nil {
 		panic(fmt.Errorf("error creating client: %w", err))
 	}
-	smartRouting := config.Network.SmartRouting()
+	smartRouting := config.ClusterConfig.SmartRouting()
 	addressTranslator := cluster.NewDefaultAddressTranslator()
 	addressProviders := []icluster.AddressProvider{
-		icluster.NewDefaultAddressProvider(config.Network),
+		icluster.NewDefaultAddressProvider(config.ClusterConfig),
 	}
 	eventDispatcher := event.NewDispatchServiceImpl()
 	requestCh := make(chan invocation.Invocation, 1024)
@@ -186,7 +173,7 @@ func (c *clientImpl) createComponents(config *Config) {
 		PartitionService:     partitionService,
 		SerializationService: serializationService,
 		EventDispatcher:      eventDispatcher,
-		NetworkConfig:        config.Network,
+		ClusterConfig:        config.ClusterConfig,
 		Credentials:          credentials,
 		ClientName:           c.name,
 	})

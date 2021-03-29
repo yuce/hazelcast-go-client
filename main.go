@@ -6,9 +6,10 @@ import (
 )
 
 func main(){
-	defaultConfig := hazelcast.DefaultConfig()
-	defaultConfig.ClusterName = "jet"
-	client, err := hazelcast.StartNewClientWithConfig(defaultConfig)
+	cb := hazelcast.NewClientConfigBuilder()
+	cb.Cluster().SetName("jet")
+	config, err := cb.Config()
+	client, err := hazelcast.StartNewClientWithConfig(config)
 	if err != nil {
 		log.Fatal(err)
 	}
