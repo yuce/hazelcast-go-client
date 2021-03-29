@@ -80,12 +80,12 @@ func (b CreationBundle) Check() {
 }
 
 type Impl struct {
-	RequestCh            chan<- invocation.Invocation
+	requestCh            chan<- invocation.Invocation
 	serializationService spi.SerializationService
 	partitionService     cluster.PartitionService
 	eventDispatcher      event.DispatchService
 	clusterService       cluster.Service
-	InvocationFactory    invocation.Factory
+	invocationFactory    invocation.Factory
 	listenerBinder       proto.ListenerBinder
 	smartRouting         bool
 	serviceName          string
@@ -97,12 +97,12 @@ func NewImpl(bundle CreationBundle, serviceName string, objectName string) *Impl
 	return &Impl{
 		serviceName:          serviceName,
 		name:                 objectName,
-		RequestCh:            bundle.RequestCh,
+		requestCh:            bundle.RequestCh,
 		serializationService: bundle.SerializationService,
 		eventDispatcher:      bundle.EventDispatcher,
 		partitionService:     bundle.PartitionService,
 		clusterService:       bundle.ClusterService,
-		InvocationFactory:    bundle.InvocationFactory,
+		invocationFactory:    bundle.InvocationFactory,
 		listenerBinder:       bundle.ListenerBinder,
 		smartRouting:         bundle.SmartRouting,
 	}
@@ -110,8 +110,8 @@ func NewImpl(bundle CreationBundle, serviceName string, objectName string) *Impl
 
 func (p *Impl) Destroy() error {
 	request := proto.ClientDestroyProxyEncodeRequest(p.name, p.serviceName)
-	inv := p.InvocationFactory.NewInvocationOnRandomTarget(request, nil)
-	p.RequestCh <- inv
+	inv := p.invocationFactory.NewInvocationOnRandomTarget(request, nil)
+	p.requestCh <- inv
 	if _, err := inv.Get(); err != nil {
 		return fmt.Errorf("error destroying proxy: %w", err)
 	}
@@ -206,14 +206,16 @@ func (p *Impl) validateAndSerializeMapAndGetPartitions(entries map[interface{}]i
 }
 
 func (p *Impl) invokeOnKey(request *proto.ClientMessage, keyData serialization.Data) (*proto.ClientMessage, error) {
-	inv := p.InvocationFactory.NewInvocationOnKeyOwner(request, keyData)
-	p.RequestCh <- inv
+	inv := p.invocationFactory.NewInvocationOnKeyOwner(request, keyData)
+	p.requestCh <- inv
 	return inv.Get()
 }
 
-func (p *Impl) invokeOnRandomTarget(request *proto.ClientMessage) (*proto.ClientMessage, error) {
-	inv := p.InvocationFactory.NewInvocationOnRandomTarget(request, nil)
-	p.RequestCh <- inv
+
+func (p *Impl) invokeOnRandomTarget(request *proto.ClientMessage, handler proto.ClientMessageHandler) (*proto.ClientMessage, error) {
+	inv := p.invocationFactory.NewInvocationOnRandomTarget(request, handler)
+	p.requestCh <- inv
+
 	return inv.Get()
 }
 
@@ -222,14 +224,14 @@ func (p *Impl) invokeOnPartition(request *proto.ClientMessage, partitionID int32
 }
 
 func (p *Impl) invokeOnPartitionAsync(request *proto.ClientMessage, partitionID int32) invocation.Invocation {
-	inv := p.InvocationFactory.NewInvocationOnPartitionOwner(request, partitionID)
-	p.RequestCh <- inv
+	inv := p.invocationFactory.NewInvocationOnPartitionOwner(request, partitionID)
+	p.requestCh <- inv
 	return inv
 }
 
 func (p *Impl) invokeOnAddress(request *proto.ClientMessage, address pubcluster.Address) (*proto.ClientMessage, error) {
-	inv := p.InvocationFactory.NewInvocationOnTarget(request, address)
-	p.RequestCh <- inv
+	inv := p.invocationFactory.NewInvocationOnTarget(request, address)
+	p.requestCh <- inv
 	return inv.Get()
 }
 
@@ -314,7 +316,7 @@ func newPartitionSpecificProxy(
 ) *partitionSpecificProxy {
 	parSpecProxy := &partitionSpecificProxy{
 		Impl: &Impl{
-			RequestCh:            RequestCh,
+			requestCh:            RequestCh,
 			serializationService: serializationService,
 			partitionService:     partitionService,
 			clusterService:       clusterService,

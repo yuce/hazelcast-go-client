@@ -133,7 +133,7 @@ func (codecUtil) DecodeNullableForBitmapIndexOptions(frameIterator *proto.Forwar
 	return DecodeBitmapIndexOptions(frameIterator)
 }
 
-func (codecUtil) DecodeNullableForSimpleEntryView(frameIterator *proto.ForwardFrameIterator) *internal.SimpleEntryView {
+func (codecUtil) DecodeNullableForSimpleEntryView(frameIterator *proto.ForwardFrameIterator) *hztypes.SimpleEntryView {
 	isNullFrame := frameIterator.PeekNext().IsNullFrame()
 	if isNullFrame {
 		frameIterator.Next()

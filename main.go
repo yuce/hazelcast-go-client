@@ -26,7 +26,7 @@ func main() {
 	_, _ = someMap.Put(5, "selam5")
 	_, _ = someMap.Put(6, "selam6")
 
-	result, err := client.SqlService().Execute("SHOW MAPPINGS")
+	result, err := client.SqlService().Execute("SELECT * FROM someMap")
 
 	if err != nil {
 		log.Panicf("could not execute sql %s", err)
