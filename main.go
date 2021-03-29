@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast"
 	"log"
 )
@@ -16,8 +17,9 @@ func main(){
 
 	someMap, _ := client.GetMap("someMap2")
 
-	_, _ = someMap.Put("selam", 1)
+	// _, _ = someMap.Put("selam", 1)
 
+	fmt.Println(someMap.Get("selam"))
 
 	client.SqlService().Execute("SELECT * FROM someMap2")
 }
