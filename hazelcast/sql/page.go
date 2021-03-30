@@ -1,7 +1,6 @@
 package sql
 
 import (
-	"fmt"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/serialization"
 )
 
@@ -75,7 +74,7 @@ func (c *ColumnarDataHolder) getColumnValuesForServer(columnIndex int, columnTyp
 
 	rows := c.columns[columnIndex]
 	for _, v := range rows {
-		fmt.Println(string(v.Buffer()))
+		// fmt.Println(string(v.Buffer()))
 		res = append(res, v)
 	}
 

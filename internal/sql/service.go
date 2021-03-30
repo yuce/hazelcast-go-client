@@ -1,7 +1,6 @@
 package sql
 
 import (
-	"fmt"
 	pubcluster "github.com/hazelcast/hazelcast-go-client/v4/hazelcast/cluster"
 	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/sql"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal"
@@ -24,7 +23,7 @@ func NewSqlService(connectionManager *icluster.ConnectionManager, clusterService
 }
 
 func (s *Service) Execute(command string) (sql.Result, error) {
-	fmt.Println("Executing SQL service: ", command)
+	// fmt.Println("Executing SQL service: ", command)
 
 	membersMap := s.clusterService.GetMembersMap()
 	if len(membersMap) == 0 {
