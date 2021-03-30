@@ -3,6 +3,7 @@ package hazelcast
 import (
 	"fmt"
 	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/cluster"
+	isql "github.com/hazelcast/hazelcast-go-client/v4/hazelcast/sql"
 	"github.com/hazelcast/hazelcast-go-client/v4/internal/sql"
 	"sync/atomic"
 	"time"
@@ -77,15 +78,9 @@ func (c *Client) GetMap(name string) (hztypes.Map, error) {
 	return c.proxyManager.GetMap(name)
 }
 
-func (c *Client) SqlService() *sql.Service {
-	return c.sqlService
+func (c *Client) ExecuteSQL(sql string) (isql.Result, error) {
+	return c.sqlService.Execute(sql)
 }
-
-/*
-func (c *Client) ExecuteSQL(sql string) (sql.Result, error) {
-	return nil, nil
-}
-*/
 
 func (c *Client) Start() error {
 	// TODO: Recover from panics and return as error
