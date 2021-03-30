@@ -197,7 +197,7 @@ func (c *Client) createComponents(config *Config) {
 		ListenerBinder:       listenerBinder,
 	}
 	proxyManager := proxy.NewManagerImpl(proxyManagerServiceBundle)
-	sqlService := sql.NewSqlService(connectionManager, clusterService, invocationService, serializationService)
+	sqlService := sql.NewSqlService(connectionManager, clusterService, requestCh, serializationService)
 
 	c.eventDispatcher = eventDispatcher
 	c.connectionManager = connectionManager

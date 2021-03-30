@@ -77,14 +77,14 @@ func (s *ServiceImpl) processIncoming() {
 	for {
 		select {
 		case inv := <-s.requestCh:
-			s.SendInvocation(inv)
+			s.sendInvocation(inv)
 		case msg := <-s.responseCh:
 			s.handleClientMessage(msg)
 		}
 	}
 }
 
-func (s *ServiceImpl) SendInvocation(invocation Invocation) Result {
+func (s *ServiceImpl) sendInvocation(invocation Invocation) Result {
 	s.registerInvocation(invocation)
 	if err := s.handler.Invoke(invocation); err != nil {
 		s.handleError(invocation.Request().CorrelationID(), err)

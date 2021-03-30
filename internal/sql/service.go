@@ -14,13 +14,13 @@ import (
 
 type Service struct {
 	serializationService serialization.Service
-	invocationService    *invocation.ServiceImpl
 	connectionManager    *icluster.ConnectionManager
 	clusterService       icluster.Service
+	requestCh            chan<- invocation.Invocation
 }
 
-func NewSqlService(connectionManager *icluster.ConnectionManager, clusterService icluster.Service, invocationService *invocation.ServiceImpl, serializationService serialization.Service) *Service {
-	return &Service{connectionManager: connectionManager, clusterService: clusterService, invocationService: invocationService, serializationService: serializationService}
+func NewSqlService(connectionManager *icluster.ConnectionManager, clusterService icluster.Service, requestCh chan<- invocation.Invocation, serializationService serialization.Service) *Service {
+	return &Service{connectionManager: connectionManager, clusterService: clusterService, requestCh: requestCh, serializationService: serializationService}
 }
 
 func (s *Service) Execute(command string) (sql.Result, error) {
@@ -68,6 +68,7 @@ func (s *Service) Execute(command string) (sql.Result, error) {
 }
 
 func (s *Service) invoke(request *proto.ClientMessage, address pubcluster.Address) (*proto.ClientMessage, error) {
-	inv := s.invocationService.SendInvocation(invocation.NewImpl(request, 0, address, -1))
+	inv := invocation.NewImpl(request, 0, address, -1)
+	s.requestCh <- inv
 	return inv.Get()
 }
