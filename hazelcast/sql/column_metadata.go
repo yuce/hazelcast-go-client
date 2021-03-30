@@ -10,26 +10,26 @@ func NewColumnMetadata(name string, columnType int32, isNullableExists bool, nul
 	return ColumnMetadata{name: name, columnType: ColumnType(columnType), nullable: nullable}
 }
 
-func (s *ColumnMetadata) Nullable() bool {
+func (s ColumnMetadata) Nullable() bool {
 	return s.nullable
 }
 
-func (s *ColumnMetadata) SetNullable(nullable bool) {
+func (s ColumnMetadata) SetNullable(nullable bool) {
 	s.nullable = nullable
 }
 
-func (s *ColumnMetadata) Type() ColumnType {
+func (s ColumnMetadata) Type() ColumnType {
 	return s.columnType
 }
 
-func (s *ColumnMetadata) SetColumnType(columnType ColumnType) {
+func (s ColumnMetadata) SetColumnType(columnType ColumnType) {
 	s.columnType = columnType
 }
 
-func (s *ColumnMetadata) Name() string {
+func (s ColumnMetadata) Name() string {
 	return s.name
 }
 
-func (s *ColumnMetadata) SetName(name string) {
+func (s ColumnMetadata) SetName(name string) {
 	s.name = name
 }
