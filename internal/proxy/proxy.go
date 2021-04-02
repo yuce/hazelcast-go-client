@@ -213,9 +213,11 @@ func (p *Impl) invokeOnKey(request *proto.ClientMessage, keyData serialization.D
 	return inv.Get()
 }
 
+
 func (p *Impl) invokeOnRandomTarget(request *proto.ClientMessage, handler proto.ClientMessageHandler) (*proto.ClientMessage, error) {
 	inv := p.invocationFactory.NewInvocationOnRandomTarget(request, handler)
 	p.requestCh <- inv
+
 	return inv.Get()
 }
 
@@ -310,7 +312,7 @@ func newPartitionSpecificProxy(
 	serializationService spi.SerializationService,
 	partitionService cluster.PartitionService,
 	//invocationService invocation.Service,
-	requestCh chan<- invocation.Invocation,
+	RequestCh chan<- invocation.Invocation,
 	clusterService cluster.Service,
 	smartRouting bool,
 	serviceName string,
@@ -318,7 +320,7 @@ func newPartitionSpecificProxy(
 ) *partitionSpecificProxy {
 	parSpecProxy := &partitionSpecificProxy{
 		Impl: &Impl{
-			requestCh:            requestCh,
+			requestCh:            RequestCh,
 			serializationService: serializationService,
 			partitionService:     partitionService,
 			clusterService:       clusterService,

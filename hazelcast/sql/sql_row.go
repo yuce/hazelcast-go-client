@@ -1,12 +1,31 @@
 package sql
 
-type Row struct {
+type SqlRow interface {
+	ValueAtIndex(index int) interface{}
+	ValueWithName(name string) interface{}
+	Metadata() *SqlRowMetadata
 }
 
-func (r Row) ValueAtIndex(index int) interface{} {
-	return nil
+type sqlRowImpl struct {
+	rowMetadata *SqlRowMetadata
+	row         rowImpl
 }
 
-func (r Row) ValueWithName(name string) interface{} {
+func NewSqlRow(rowMetadata *SqlRowMetadata, row rowImpl) SqlRow {
+	return &sqlRowImpl{
+		rowMetadata: rowMetadata,
+		row:         row,
+	}
+}
+
+func (r *sqlRowImpl) ValueAtIndex(index int) interface{} {
+	return r.row.ValueAtIndex(index)
+}
+
+func (r *sqlRowImpl) Metadata() *SqlRowMetadata {
+	return r.rowMetadata
+}
+
+func (r *sqlRowImpl) ValueWithName(name string) interface{} {
 	return nil
 }

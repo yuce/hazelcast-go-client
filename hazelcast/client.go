@@ -3,7 +3,8 @@ package hazelcast
 import (
 	"fmt"
 	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/cluster"
-	"github.com/hazelcast/hazelcast-go-client/v4/hazelcast/sql"
+	isql "github.com/hazelcast/hazelcast-go-client/v4/hazelcast/sql"
+	"github.com/hazelcast/hazelcast-go-client/v4/internal/sql"
 	"sync/atomic"
 	"time"
 
@@ -37,6 +38,7 @@ type Client struct {
 	eventDispatcher   event.DispatchService
 	invocationHandler invocation.Handler
 	logger            logger.Logger
+	sqlService        *sql.Service
 
 	// state
 	started atomic.Value
@@ -74,6 +76,10 @@ func (c *Client) Name() string {
 func (c *Client) GetMap(name string) (hztypes.Map, error) {
 	c.ensureStarted()
 	return c.proxyManager.GetMap(name)
+}
+
+func (c *Client) ExecuteSQL(sql string) (isql.Result, error) {
+	return c.sqlService.Execute(sql)
 }
 
 func (c *Client) Start() error {
@@ -118,10 +124,6 @@ func (c *Client) ListenLifecycleStateChange(handler lifecycle.StateChangeHandler
 			panic("cannot cast event to lifecycle.StateChanged event")
 		}
 	})
-}
-
-func (c *Client) ExecuteSQL(sql string) (sql.Result, error) {
-	return nil, nil
 }
 
 func (c *Client) ensureStarted() {
@@ -195,6 +197,7 @@ func (c *Client) createComponents(config *Config) {
 		ListenerBinder:       listenerBinder,
 	}
 	proxyManager := proxy.NewManagerImpl(proxyManagerServiceBundle)
+	sqlService := sql.NewSqlService(connectionManager, clusterService, requestCh, serializationService)
 
 	c.eventDispatcher = eventDispatcher
 	c.connectionManager = connectionManager
@@ -202,4 +205,5 @@ func (c *Client) createComponents(config *Config) {
 	c.partitionService = partitionService
 	c.proxyManager = proxyManager
 	c.invocationHandler = invocationHandler
+	c.sqlService = sqlService
 }

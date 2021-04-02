@@ -23,6 +23,7 @@ type Service interface {
 	OwnerConnectionAddr() pubcluster.Address
 	GetMemberByUUID(uuid string) pubcluster.Member
 	SmartRoutingEnabled() bool
+	GetMembersMap() map[string]*Member
 }
 
 type ServiceImpl struct {
@@ -91,6 +92,10 @@ func (s *ServiceImpl) OwnerConnectionAddr() pubcluster.Address {
 
 func (s *ServiceImpl) GetMemberByUUID(uuid string) pubcluster.Member {
 	return s.membersMap.Find(uuid)
+}
+
+func (s* ServiceImpl) GetMembersMap() map[string]*Member {
+	return s.membersMap.members
 }
 
 func (s *ServiceImpl) Start(wantSmartRouting bool) <-chan struct{} {
