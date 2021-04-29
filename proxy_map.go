@@ -24,6 +24,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hazelcast/hazelcast-go-client/aggregate"
+
 	"github.com/hazelcast/hazelcast-go-client/internal"
 	"github.com/hazelcast/hazelcast-go-client/internal/cb"
 	"github.com/hazelcast/hazelcast-go-client/internal/event"
@@ -81,6 +83,23 @@ func (m *Map) AddInterceptor(interceptor interface{}) (string, error) {
 			return "", err
 		} else {
 			return codec.DecodeMapAddInterceptorResponse(response), nil
+		}
+	}
+}
+
+func (m *Map) Aggregate(agg aggregate.Aggregate) (interface{}, error) {
+	if aggData, err := m.validateAndSerialize(agg); err != nil {
+		return nil, err
+	} else {
+		request := codec.EncodeMapAggregateRequest(m.name, aggData)
+		if response, err := m.invokeOnRandomTarget(m.ctx, request, nil); err != nil {
+			return nil, err
+		} else if obj, err := m.convertToObject(codec.DecodeMapAggregateResponse(response)); err != nil {
+			return nil, err
+		} else if aggr, ok := obj.(aggregate.Aggregate); !ok {
+			return nil, errors.New("not an aggregate")
+		} else {
+			return aggr.Aggregate(), nil
 		}
 	}
 }

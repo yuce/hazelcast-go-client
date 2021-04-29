@@ -24,6 +24,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/hazelcast/hazelcast-go-client/aggregate"
+
 	iproxy "github.com/hazelcast/hazelcast-go-client/internal/proxy"
 
 	"github.com/hazelcast/hazelcast-go-client/cluster"
@@ -122,6 +124,9 @@ func newClient(name string, config Config) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	// XXX:
+	agg := aggregate.DistinctValues("foo")
+	config.SerializationConfig.IdentifiedDataSerializableFactories[agg.FactoryID()] = &aggregate.AggregateFactory{}
 	serializationService, err := serialization.NewService(&config.SerializationConfig)
 	if err != nil {
 		return nil, err
