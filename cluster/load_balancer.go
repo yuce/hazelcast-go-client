@@ -18,32 +18,48 @@ package cluster
 
 import (
 	"math/rand"
+	"time"
 )
 
 type LoadBalancer interface {
 	// OneOf returns one of the given addreses.
 	// addrs contains at least one item.
+	// Order of addresses may change between calls.
 	// Assume access to this function is synchronized.
-	OneOf(addrs []Address) (addr Address, ok bool)
+	// This function should return as soon as possible, should never block.
+	OneOf(addrs []Address) Address
 }
 
 type RoundRobinLoadBalancer int
 
-func (r *RoundRobinLoadBalancer) OneOf(addrs []Address) (addr Address, ok bool) {
+func NewRoundRobinLoadBalancer() *RoundRobinLoadBalancer {
+	index := RoundRobinLoadBalancer(0)
+	return &index
+}
+
+func (r *RoundRobinLoadBalancer) OneOf(addrs []Address) Address {
 	index := int(*r)
 	if len(addrs) <= index {
 		// the client lost some of the connections
 		// reset it to the last index
 		index = len(addrs) - 1
 	}
-	addr = addrs[index]
-	(*r)++
-	return addr, true
+	addr := addrs[index]
+	index = (index + 1) % len(addrs)
+	*r = RoundRobinLoadBalancer(index)
+	return addr
 }
 
-type RandomLoadBalancer struct{}
+type RandomLoadBalancer rand.Rand
 
-func (r RandomLoadBalancer) OneOf(addrs []Address) (addr Address, ok bool) {
-	index := rand.Intn(len(addrs))
-	return addrs[index], true
+func NewRandomLoadBalancer() *RandomLoadBalancer {
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	lb := RandomLoadBalancer(*r)
+	return &lb
+}
+
+func (lb *RandomLoadBalancer) OneOf(addrs []Address) Address {
+	r := rand.Rand(*lb)
+	index := (&r).Intn(len(addrs))
+	return addrs[index]
 }

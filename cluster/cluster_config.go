@@ -36,6 +36,7 @@ type Config struct {
 	DiscoveryConfig      DiscoveryConfig
 	RedoOperation        bool
 	SmartRouting         bool
+	LoadBalancer         LoadBalancer
 }
 
 func NewConfig() Config {
@@ -66,6 +67,7 @@ func (c *Config) Clone() Config {
 		HeartbeatTimeout:     c.HeartbeatTimeout,
 		InvocationTimeout:    c.InvocationTimeout,
 		RedoOperation:        c.RedoOperation,
+		LoadBalancer:         c.LoadBalancer,
 		SecurityConfig:       c.SecurityConfig.Clone(),
 		SSLConfig:            c.SSLConfig.Clone(),
 		HazelcastCloudConfig: c.HazelcastCloudConfig.Clone(),
