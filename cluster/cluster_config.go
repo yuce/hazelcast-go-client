@@ -24,19 +24,19 @@ import (
 )
 
 type Config struct {
+	LoadBalancer         LoadBalancer
 	SecurityConfig       SecurityConfig
-	SSLConfig            SSLConfig
 	Name                 string
+	SSLConfig            SSLConfig
 	HazelcastCloudConfig HazelcastCloudConfig
 	Addrs                []string
 	InvocationTimeout    time.Duration
-	HeartbeatInterval    time.Duration
 	HeartbeatTimeout     time.Duration
 	ConnectionTimeout    time.Duration
+	HeartbeatInterval    time.Duration
 	DiscoveryConfig      DiscoveryConfig
 	RedoOperation        bool
 	SmartRouting         bool
-	LoadBalancer         LoadBalancer
 }
 
 func NewConfig() Config {

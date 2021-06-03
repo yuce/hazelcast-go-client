@@ -8,8 +8,7 @@ import (
 )
 
 func TestRoundRobinLoadBalancer_OneOf(t *testing.T) {
-	var lb cluster.LoadBalancer
-	lb = cluster.NewRoundRobinLoadBalancer()
+	var lb cluster.LoadBalancer = cluster.NewRoundRobinLoadBalancer()
 	targetAddrs := []cluster.Address{"a:5071", "b:5701", "c:5701", "a:5071", "b:5701"}
 	var addrs []cluster.Address
 	for i := 0; i < 5; i++ {

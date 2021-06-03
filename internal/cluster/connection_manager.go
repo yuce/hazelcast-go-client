@@ -112,7 +112,7 @@ func (b ConnectionManagerCreationBundle) Check() {
 type ConnectionManager struct {
 	logger               ilogger.Logger
 	credentials          security.Credentials
-	partitionService     *PartitionService
+	cb                   *cb.CircuitBreaker
 	serializationService *iserialization.Service
 	eventDispatcher      *event.DispatchService
 	invocationFactory    *ConnectionInvocationFactory
@@ -120,16 +120,16 @@ type ConnectionManager struct {
 	responseCh           chan<- *proto.ClientMessage
 	startCh              chan struct{}
 	requestCh            chan<- invocation.Invocation
-	connMap              *connectionMap
+	partitionService     *PartitionService
 	doneCh               chan struct{}
 	clusterConfig        *pubcluster.Config
-	cb                   *cb.CircuitBreaker
+	connMap              *connectionMap
 	clientName           string
+	clientVersion        string
 	clientUUID           types.UUID
 	nextConnID           int64
 	state                int32
 	smartRouting         bool
-	clientVersion        string
 }
 
 func NewConnectionManager(bundle ConnectionManagerCreationBundle) *ConnectionManager {
@@ -516,13 +516,11 @@ func (m *ConnectionManager) detectFixBrokenConnections() {
 }
 
 type connectionMap struct {
-	mu *sync.RWMutex
-	// addrToConn maps connection address to connection
-	addrToConn map[pubcluster.Address]*Connection
-	// connToAddr maps connection ID to address
+	loadBalancer pubcluster.LoadBalancer
+	mu           *sync.RWMutex
+	addrToConn   map[pubcluster.Address]*Connection
 	connToAddr   map[int64]pubcluster.Address
 	addrs        []pubcluster.Address
-	loadBalancer pubcluster.LoadBalancer
 }
 
 func newConnectionMap(lb pubcluster.LoadBalancer) *connectionMap {
