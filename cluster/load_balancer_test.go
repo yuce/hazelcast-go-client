@@ -26,6 +26,14 @@ func TestRoundRobinLoadBalancer_OneOf_ConnectionLost(t *testing.T) {
 	assert.Equal(t, cluster.Address("c:5701"), addr)
 }
 
+func TestNewRandomLoadBalancer(t *testing.T) {
+	var lb cluster.LoadBalancer = cluster.NewRandomLoadBalancer()
+	addr := lb.OneOf([]cluster.Address{"a:5071", "b:5701", "c:5701"})
+	if addr.Equal("") {
+		t.Fatalf("one of the addresses must be returned")
+	}
+}
+
 func TestRandomLoadBalancer_OneOf(t *testing.T) {
 	var lb cluster.LoadBalancer
 	// seed the random load balancer with a fixed int

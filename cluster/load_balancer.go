@@ -21,6 +21,7 @@ import (
 	"time"
 )
 
+// LoadBalancer is used to select the next connection when sending invocations.
 type LoadBalancer interface {
 	// OneOf returns one of the given addreses.
 	// addrs contains at least one item.
@@ -30,13 +31,16 @@ type LoadBalancer interface {
 	OneOf(addrs []Address) Address
 }
 
+// RoundRobinLoadBalancer selects the next address in order.
 type RoundRobinLoadBalancer int
 
+// NewRoundRobinLoadBalancer creates a new RoundRobinLoadBalancer
 func NewRoundRobinLoadBalancer() *RoundRobinLoadBalancer {
 	index := RoundRobinLoadBalancer(0)
 	return &index
 }
 
+// OneOf selects the next address in order from the given address list.
 func (r *RoundRobinLoadBalancer) OneOf(addrs []Address) Address {
 	index := int(*r)
 	if len(addrs) <= index {
@@ -50,14 +54,17 @@ func (r *RoundRobinLoadBalancer) OneOf(addrs []Address) Address {
 	return addr
 }
 
+// RandomLoadBalancer selects the next address randomly.
 type RandomLoadBalancer rand.Rand
 
+// NewRandomLoadBalancer creates a new RandomLoadBalancer with a predefined seed.
 func NewRandomLoadBalancer() *RandomLoadBalancer {
 	r := rand.New(rand.NewSource(time.Now().Unix()))
 	lb := RandomLoadBalancer(*r)
 	return &lb
 }
 
+// OneOf selects a random address from the given list and returns it
 func (lb *RandomLoadBalancer) OneOf(addrs []Address) Address {
 	r := rand.Rand(*lb)
 	index := (&r).Intn(len(addrs))
