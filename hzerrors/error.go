@@ -23,9 +23,12 @@ import (
 )
 
 var (
+	ErrAddressNotFound = errors.New("address not found")
+
 	ErrClientOffline             = errors.New("client offline")
 	ErrClientNotAllowedInCluster = errors.New("client not allowed in cluster")
-	ErrAddressNotFound           = errors.New("address not found")
+	ErrClientCannotStart         = errors.New("client cannot start")
+	ErrClientNotActive           = errors.New("client not active")
 )
 
 // HazelcastError is the general error interface.
@@ -301,4 +304,12 @@ func NewHazelcastError(err *ServerError) HazelcastError {
 		return NewHazelcastIllegalArgumentError(message, err)
 	}
 	return NewHazelcastErrorType(message, err)
+}
+
+type IndexValidationError struct {
+	Err error
+}
+
+func (ic IndexValidationError) Error() string {
+	return ic.Err.Error()
 }

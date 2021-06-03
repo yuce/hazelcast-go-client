@@ -24,15 +24,16 @@ import (
 )
 
 type Config struct {
+	LoadBalancer         LoadBalancer
 	SecurityConfig       SecurityConfig
-	SSLConfig            SSLConfig
 	Name                 string
+	SSLConfig            SSLConfig
 	HazelcastCloudConfig HazelcastCloudConfig
 	Addrs                []string
 	InvocationTimeout    time.Duration
-	HeartbeatInterval    time.Duration
 	HeartbeatTimeout     time.Duration
 	ConnectionTimeout    time.Duration
+	HeartbeatInterval    time.Duration
 	DiscoveryConfig      DiscoveryConfig
 	RedoOperation        bool
 	SmartRouting         bool
@@ -66,6 +67,7 @@ func (c *Config) Clone() Config {
 		HeartbeatTimeout:     c.HeartbeatTimeout,
 		InvocationTimeout:    c.InvocationTimeout,
 		RedoOperation:        c.RedoOperation,
+		LoadBalancer:         c.LoadBalancer,
 		SecurityConfig:       c.SecurityConfig.Clone(),
 		SSLConfig:            c.SSLConfig.Clone(),
 		HazelcastCloudConfig: c.HazelcastCloudConfig.Clone(),
