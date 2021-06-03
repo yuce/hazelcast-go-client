@@ -21,29 +21,29 @@ import (
 )
 
 type LoadBalancer interface {
-	// OneOf returns one of the given items.
-	// items contains at least one item.
+	// OneOf returns one of the given addreses.
+	// addrs contains at least one item.
 	// Assume access to this function is synchronized.
-	OneOf(items []MemberInfo) (member *MemberInfo, ok bool)
+	OneOf(addrs []Address) (addr Address, ok bool)
 }
 
 type RoundRobinLoadBalancer int
 
-func (r *RoundRobinLoadBalancer) OneOf(members []MemberInfo) (member *MemberInfo, ok bool) {
+func (r *RoundRobinLoadBalancer) OneOf(addrs []Address) (addr Address, ok bool) {
 	index := int(*r)
-	if len(members) <= index {
+	if len(addrs) <= index {
 		// the client lost some of the connections
 		// reset it to the last index
-		index = len(members) - 1
+		index = len(addrs) - 1
 	}
-	m := members[index]
+	addr = addrs[index]
 	(*r)++
-	return &m, true
+	return addr, true
 }
 
 type RandomLoadBalancer struct{}
 
-func (r RandomLoadBalancer) OneOf(members []MemberInfo) (member *MemberInfo, ok bool) {
-	index := rand.Intn(len(members))
-	return &members[index], true
+func (r RandomLoadBalancer) OneOf(addrs []Address) (addr Address, ok bool) {
+	index := rand.Intn(len(addrs))
+	return addrs[index], true
 }

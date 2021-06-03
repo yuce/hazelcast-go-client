@@ -17,14 +17,14 @@
 package hazelcast
 
 import (
-	"errors"
 	"fmt"
-	"github.com/hazelcast/hazelcast-go-client/internal/cloud"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/hazelcast/hazelcast-go-client/cluster"
+	"github.com/hazelcast/hazelcast-go-client/hzerrors"
+	"github.com/hazelcast/hazelcast-go-client/internal/cloud"
 	icluster "github.com/hazelcast/hazelcast-go-client/internal/cluster"
 	"github.com/hazelcast/hazelcast-go-client/internal/event"
 	"github.com/hazelcast/hazelcast-go-client/internal/invocation"
@@ -46,11 +46,9 @@ const (
 	stopped
 )
 
-var (
-	ErrClientCannotStart = errors.New("client cannot start")
-	ErrClientNotActive   = errors.New("client not active")
-	ErrContextIsNil      = errors.New("context is nil")
-)
+// ClientVersion is the build time version
+// TODO: This should be replaced with a build time version variable, BuildInfo etc.
+var ClientVersion = "1.0.0"
 
 // StartNewClient creates and starts a new client.
 // Hazelcast client enables you to do all Hazelcast operations without
@@ -152,7 +150,7 @@ func (c *Client) Name() string {
 // GetMap returns a distributed map instance.
 func (c *Client) GetMap(name string) (*Map, error) {
 	if atomic.LoadInt32(&c.state) != ready {
-		return nil, ErrClientNotActive
+		return nil, hzerrors.ErrClientNotActive
 	}
 	return c.proxyManager.getMap(name)
 }
@@ -160,7 +158,7 @@ func (c *Client) GetMap(name string) (*Map, error) {
 // GetReplicatedMap returns a replicated map instance.
 func (c *Client) GetReplicatedMap(name string) (*ReplicatedMap, error) {
 	if atomic.LoadInt32(&c.state) != ready {
-		return nil, ErrClientNotActive
+		return nil, hzerrors.ErrClientNotActive
 	}
 	return c.proxyManager.getReplicatedMap(name)
 }
@@ -168,7 +166,7 @@ func (c *Client) GetReplicatedMap(name string) (*ReplicatedMap, error) {
 // GetQueue returns a queue instance.
 func (c *Client) GetQueue(name string) (*Queue, error) {
 	if atomic.LoadInt32(&c.state) != ready {
-		return nil, ErrClientNotActive
+		return nil, hzerrors.ErrClientNotActive
 	}
 	return c.proxyManager.getQueue(name)
 }
@@ -176,7 +174,7 @@ func (c *Client) GetQueue(name string) (*Queue, error) {
 // GetTopic returns a topic instance.
 func (c *Client) GetTopic(name string) (*Topic, error) {
 	if atomic.LoadInt32(&c.state) != ready {
-		return nil, ErrClientNotActive
+		return nil, hzerrors.ErrClientNotActive
 	}
 	return c.proxyManager.getTopic(name)
 }
@@ -184,7 +182,7 @@ func (c *Client) GetTopic(name string) (*Topic, error) {
 // GetList returns a list instance.
 func (c *Client) GetList(name string) (*List, error) {
 	if atomic.LoadInt32(&c.state) != ready {
-		return nil, ErrClientNotActive
+		return nil, hzerrors.ErrClientNotActive
 	}
 	return c.proxyManager.getList(name)
 }
@@ -192,7 +190,7 @@ func (c *Client) GetList(name string) (*List, error) {
 // Start connects the client to the cluster.
 func (c *Client) start() error {
 	if !atomic.CompareAndSwapInt32(&c.state, created, starting) {
-		return ErrClientCannotStart
+		return hzerrors.ErrClientCannotStart
 	}
 	// TODO: Recover from panics and return as error
 	c.eventDispatcher.Publish(newLifecycleStateChanged(LifecycleStateStarting))
@@ -211,7 +209,7 @@ func (c *Client) start() error {
 // Shutdown disconnects the client from the cluster.
 func (c *Client) Shutdown() error {
 	if !atomic.CompareAndSwapInt32(&c.state, ready, stopping) {
-		return ErrClientNotActive
+		return hzerrors.ErrClientNotActive
 	}
 	c.eventDispatcher.Publish(newLifecycleStateChanged(LifecycleStateShuttingDown))
 	c.invocationService.Stop()
@@ -237,7 +235,7 @@ func (c *Client) Running() bool {
 // The handler must not block.
 func (c *Client) AddLifecycleListener(handler LifecycleStateChangeHandler) (types.UUID, error) {
 	if atomic.LoadInt32(&c.state) >= stopping {
-		return types.UUID{}, ErrClientNotActive
+		return types.UUID{}, hzerrors.ErrClientNotActive
 	}
 	uuid := types.NewUUID()
 	subscriptionID := c.refIDGen.NextID()
@@ -251,7 +249,7 @@ func (c *Client) AddLifecycleListener(handler LifecycleStateChangeHandler) (type
 // RemoveLifecycleListener removes the lifecycle state change handler with the given subscription ID
 func (c *Client) RemoveLifecycleListener(subscriptionID types.UUID) error {
 	if atomic.LoadInt32(&c.state) >= stopping {
-		return ErrClientNotActive
+		return hzerrors.ErrClientNotActive
 	}
 	c.lifecyleListenerMapMu.Lock()
 	if intID, ok := c.lifecyleListenerMap[subscriptionID]; ok {
@@ -267,7 +265,7 @@ func (c *Client) RemoveLifecycleListener(subscriptionID types.UUID) error {
 // Use the returned subscription ID to remove the listener.
 func (c *Client) AddMembershipListener(handler cluster.MembershipStateChangeHandler) (types.UUID, error) {
 	if atomic.LoadInt32(&c.state) >= stopping {
-		return types.UUID{}, ErrClientNotActive
+		return types.UUID{}, hzerrors.ErrClientNotActive
 	}
 	uuid := types.NewUUID()
 	subscriptionID := c.refIDGen.NextID()
@@ -281,7 +279,7 @@ func (c *Client) AddMembershipListener(handler cluster.MembershipStateChangeHand
 // RemoveMembershipListener removes the member state change handler with the given subscription ID.
 func (c *Client) RemoveMembershipListener(subscriptionID types.UUID) error {
 	if atomic.LoadInt32(&c.state) >= stopping {
-		return ErrClientNotActive
+		return hzerrors.ErrClientNotActive
 	}
 	c.membershipListenerMapMu.Lock()
 	if intID, ok := c.membershipListenerMap[subscriptionID]; ok {

@@ -55,10 +55,6 @@ const (
 
 const serializationVersion = 1
 
-// ClientVersion is the build time version
-// TODO: This should be replace with a build time version variable, BuildInfo etc.
-var ClientVersion = "1.0.0"
-
 type ConnectionManagerCreationBundle struct {
 	Logger               ilogger.Logger
 	Credentials          security.Credentials
@@ -71,6 +67,7 @@ type ConnectionManagerCreationBundle struct {
 	ClusterService       *Service
 	SerializationService *iserialization.Service
 	ClientName           string
+	ClientVersion        string
 }
 
 func (b ConnectionManagerCreationBundle) Check() {
@@ -107,6 +104,9 @@ func (b ConnectionManagerCreationBundle) Check() {
 	if b.ClientName == "" {
 		panic("ClientName is blank")
 	}
+	if b.ClientVersion == "" {
+		panic("ClientVersion is blank")
+	}
 }
 
 type ConnectionManager struct {
@@ -129,6 +129,7 @@ type ConnectionManager struct {
 	nextConnID           int64
 	state                int32
 	smartRouting         bool
+	clientVersion        string
 }
 
 func NewConnectionManager(bundle ConnectionManagerCreationBundle) *ConnectionManager {
@@ -164,6 +165,7 @@ func NewConnectionManager(bundle ConnectionManagerCreationBundle) *ConnectionMan
 		doneCh:               make(chan struct{}, 1),
 		startCh:              make(chan struct{}, 1),
 		cb:                   circuitBreaker,
+		clientVersion:        bundle.ClientVersion,
 	}
 	return manager
 }
@@ -424,7 +426,7 @@ func (m *ConnectionManager) createAuthenticationRequest(creds *security.Username
 		m.clientUUID,
 		proto.ClientType,
 		byte(serializationVersion),
-		ClientVersion,
+		m.clientVersion,
 		m.clientName,
 		nil,
 	)
