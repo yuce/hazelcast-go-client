@@ -17,6 +17,7 @@
 package cluster
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -32,9 +33,9 @@ import (
 
 type Service struct {
 	logger            ilogger.Logger
-	requestCh         chan<- invocation.Invocation
 	doneCh            chan struct{}
 	invocationFactory *ConnectionInvocationFactory
+	invocationService *invocation.Service
 	eventDispatcher   *event.DispatchService
 	partitionService  *PartitionService
 	config            *pubcluster.Config
@@ -45,8 +46,8 @@ type Service struct {
 type CreationBundle struct {
 	Logger            ilogger.Logger
 	Config            *pubcluster.Config
-	RequestCh         chan<- invocation.Invocation
 	InvocationFactory *ConnectionInvocationFactory
+	InvocationService *invocation.Service
 	EventDispatcher   *event.DispatchService
 	PartitionService  *PartitionService
 	AddrProviders     []AddressProvider
@@ -56,11 +57,11 @@ func (b CreationBundle) Check() {
 	if b.AddrProviders == nil {
 		panic("AddrProviders is nil")
 	}
-	if b.RequestCh == nil {
-		panic("RequestCh is nil")
-	}
 	if b.InvocationFactory == nil {
 		panic("InvocationFactory is nil")
+	}
+	if b.InvocationService == nil {
+		panic("InvocationService is nil")
 	}
 	if b.EventDispatcher == nil {
 		panic("InvocationFactory is nil")
@@ -76,13 +77,13 @@ func (b CreationBundle) Check() {
 	}
 }
 
-func NewServiceImpl(bundle CreationBundle) *Service {
+func NewService(bundle CreationBundle) *Service {
 	bundle.Check()
 	return &Service{
 		addrProviders:     bundle.AddrProviders,
-		requestCh:         bundle.RequestCh,
 		doneCh:            make(chan struct{}),
 		invocationFactory: bundle.InvocationFactory,
+		invocationService: bundle.InvocationService,
 		eventDispatcher:   bundle.EventDispatcher,
 		partitionService:  bundle.PartitionService,
 		logger:            bundle.Logger,
@@ -138,7 +139,7 @@ func (s *Service) handleMembersUpdated(conn *Connection, version int32, memberIn
 	}
 }
 
-func (s *Service) sendMemberListViewRequest(conn *Connection) {
+func (s *Service) sendMemberListViewRequest(ctx context.Context, conn *Connection) error {
 	request := codec.EncodeClientAddClusterViewListenerRequest()
 	inv := s.invocationFactory.NewConnectionBoundInvocation(request, -1, nil, conn, func(response *proto.ClientMessage) {
 		codec.HandleClientAddClusterViewListener(response, func(version int32, memberInfos []pubcluster.MemberInfo) {
@@ -147,10 +148,11 @@ func (s *Service) sendMemberListViewRequest(conn *Connection) {
 			s.partitionService.Update(conn.connectionID, partitions, version)
 		})
 	})
-	s.requestCh <- inv
-	if _, err := inv.Get(); err != nil {
-		s.logger.Error(err)
+	if err := s.invocationService.Send(ctx, inv); err != nil {
+		return err
 	}
+	_, err := inv.GetWithContext(ctx)
+	return err
 }
 
 func (s *Service) logStatus() {

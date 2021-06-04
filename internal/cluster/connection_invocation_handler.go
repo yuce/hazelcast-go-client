@@ -31,28 +31,6 @@ import (
 
 var errPartitionOwnerNotAssigned = errors.New("partition owner not assigned")
 
-type ConnectionInvocationHandlerCreationBundle struct {
-	ConnectionManager *ConnectionManager
-	ClusterService    *Service
-	Logger            ilogger.Logger
-	Config            *pubcluster.Config
-}
-
-func (b ConnectionInvocationHandlerCreationBundle) Check() {
-	if b.ConnectionManager == nil {
-		panic("ConnectionManager is nil")
-	}
-	if b.ClusterService == nil {
-		panic("ClusterService is nil")
-	}
-	if b.Logger == nil {
-		panic("Logger is nil")
-	}
-	if b.Config == nil {
-		panic("Config is nil")
-	}
-}
-
 type ConnectionInvocationHandler struct {
 	logger            ilogger.Logger
 	connectionManager *ConnectionManager
@@ -61,8 +39,7 @@ type ConnectionInvocationHandler struct {
 	smart             bool
 }
 
-func NewConnectionInvocationHandler(bundle ConnectionInvocationHandlerCreationBundle) *ConnectionInvocationHandler {
-	bundle.Check()
+func NewConnectionInvocationHandler(cc *pubcluster.Config, logger ilogger.Logger) *ConnectionInvocationHandler {
 	// TODO: make circuit breaker configurable
 	circuitBreaker := cb.NewCircuitBreaker(
 		cb.MaxRetries(3),
@@ -71,11 +48,9 @@ func NewConnectionInvocationHandler(bundle ConnectionInvocationHandlerCreationBu
 			return time.Duration(attempt) * time.Second
 		}))
 	return &ConnectionInvocationHandler{
-		connectionManager: bundle.ConnectionManager,
-		clusterService:    bundle.ClusterService,
-		logger:            bundle.Logger,
-		cb:                circuitBreaker,
-		smart:             bundle.Config.SmartRouting,
+		logger: logger,
+		cb:     circuitBreaker,
+		smart:  cc.SmartRouting,
 	}
 }
 

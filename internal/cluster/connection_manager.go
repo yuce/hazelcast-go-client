@@ -170,7 +170,48 @@ func NewConnectionManager(bundle ConnectionManagerCreationBundle) *ConnectionMan
 	return manager
 }
 
-func (m *ConnectionManager) Start(timeout time.Duration) error {
+func (m *ConnectionManager) Start(ctx context.Context) error {
+	if !atomic.CompareAndSwapInt32(&m.state, created, starting) {
+		return nil
+	}
+	return m.start(ctx)
+}
+
+func (m *ConnectionManager) start(ctx context.Context) error {
+	m.eventDispatcher.Subscribe(EventMembersAdded, event.DefaultSubscriptionID, m.handleInitialMembersAdded)
+	_, err := m.cb.TryContext(ctx, func(ctx context.Context, attempt int) (interface{}, error) {
+		err := m.connectCluster(ctx)
+		if err != nil {
+			m.logger.Errorf("error starting: %w", err)
+		}
+		return nil, err
+	})
+	if err != nil {
+		return err
+	}
+	// wait for the initial member list
+	select {
+	case <-m.startCh:
+		break
+	case <-ctx.Done():
+		return fmt.Errorf("receiving initial member list: %w", ctx.Err())
+	}
+	go m.heartbeat()
+	if m.smartRouting {
+		// fix broken connections only in the smart mode
+		go m.detectFixBrokenConnections()
+	}
+	if m.logger.CanLogDebug() {
+		go m.logStatus()
+	}
+	atomic.StoreInt32(&m.state, ready)
+	m.eventDispatcher.Subscribe(EventConnectionClosed, event.DefaultSubscriptionID, m.handleConnectionClosed)
+	m.eventDispatcher.Publish(NewConnected())
+	return nil
+}
+
+/*
+func (m *ConnectionManager) Start(ctx context.Context) error {
 	if !atomic.CompareAndSwapInt32(&m.state, created, starting) {
 		return nil
 	}
@@ -204,6 +245,7 @@ func (m *ConnectionManager) Start(timeout time.Duration) error {
 	m.eventDispatcher.Publish(NewConnected())
 	return nil
 }
+*/
 
 func (m *ConnectionManager) Stop() {
 	if !atomic.CompareAndSwapInt32(&m.state, ready, stopping) {
@@ -260,11 +302,11 @@ func (m *ConnectionManager) handleMembersAdded(event event.Event) {
 	if !m.smartRouting && m.connMap.Len() > 0 {
 		return
 	}
-	if memberAddedEvent, ok := event.(*MembersAdded); ok {
-		missingAddrs := m.connMap.FindAddedAddrs(memberAddedEvent.Members)
+	if e, ok := event.(*MembersAdded); ok {
+		missingAddrs := m.connMap.FindAddedAddrs(e.Members)
 		for _, addr := range missingAddrs {
-			if err := m.connectAddr(addr); err != nil {
-				m.logger.Errorf("error connecting addr: %w", err)
+			if _, err := m.ensureConnection(context.TODO(), addr); err != nil {
+				m.logger.Errorf("connecting addr: %w", err)
 			} else {
 				m.logger.Infof("connectionManager member added: %s", addr.String())
 			}
@@ -273,8 +315,8 @@ func (m *ConnectionManager) handleMembersAdded(event event.Event) {
 }
 
 func (m *ConnectionManager) handleMembersRemoved(event event.Event) {
-	if memberRemovedEvent, ok := event.(MembersRemoved); ok {
-		removedConns := m.connMap.FindRemovedConns(memberRemovedEvent.Members)
+	if e, ok := event.(MembersRemoved); ok {
+		removedConns := m.connMap.FindRemovedConns(e.Members)
 		for _, conn := range removedConns {
 			m.removeConnection(conn)
 		}
@@ -285,16 +327,16 @@ func (m *ConnectionManager) handleConnectionClosed(event event.Event) {
 	if atomic.LoadInt32(&m.state) != ready {
 		return
 	}
-	if connectionClosedEvent, ok := event.(*ConnectionClosed); ok {
+	if e, ok := event.(*ConnectionClosed); ok {
 		respawnConnection := false
-		if err := connectionClosedEvent.Err; err != nil {
+		if err := e.Err; err != nil {
 			respawnConnection = true
 		}
-		conn := connectionClosedEvent.Conn
+		conn := e.Conn
 		m.removeConnection(conn)
 		if respawnConnection {
-			if addr := m.connMap.GetAddrForConnectionID(conn.connectionID); addr != nil {
-				if err := m.connectAddr(addr); err != nil {
+			if addr, ok := m.connMap.GetAddrForConnectionID(conn.connectionID); ok {
+				if _, err := m.ensureConnection(context.TODO(), addr); err != nil {
 					m.logger.Errorf("error connecting addr: %w", err)
 					// TODO: add failing addrs to a channel
 				}
@@ -309,44 +351,38 @@ func (m *ConnectionManager) removeConnection(conn *Connection) {
 	}
 }
 
-func (m *ConnectionManager) connectCluster() error {
+func (m *ConnectionManager) connectCluster(ctx context.Context) error {
 	candidateAddrs := m.clusterService.memberCandidateAddrs()
 	if len(candidateAddrs) == 0 {
-		return cb.WrapNonRetryableError(errors.New("no member candidate addresses"))
+		return cb.WrapNonRetryableError(errors.New("no candidate addresses"))
 	}
 	for _, addr := range candidateAddrs {
-		if err := m.connectAddr(addr); err != nil {
+		if conn, err := m.ensureConnection(ctx, addr); err != nil {
 			m.logger.Errorf("cannot connect to %s: %w", addr.String(), err)
 		} else {
-			return nil
+			return m.clusterService.sendMemberListViewRequest(ctx, conn)
 		}
 	}
 	return errors.New("cannot connect to any address in the cluster")
 }
 
-func (m *ConnectionManager) connectAddr(addr *pubcluster.AddressImpl) error {
-	_, err := m.ensureConnection(addr)
-	return err
-}
-
-func (m *ConnectionManager) ensureConnection(addr *pubcluster.AddressImpl) (*Connection, error) {
+func (m *ConnectionManager) ensureConnection(ctx context.Context, addr *pubcluster.AddressImpl) (*Connection, error) {
 	if conn := m.getConnection(addr); conn != nil {
 		return conn, nil
 	}
-	addr = m.addressTranslator.Translate(addr)
-	return m.maybeCreateConnection(addr)
+	return m.maybeCreateConnection(ctx, addr)
 }
 
 func (m *ConnectionManager) getConnection(addr *pubcluster.AddressImpl) *Connection {
 	return m.GetConnectionForAddress(addr)
 }
 
-func (m *ConnectionManager) maybeCreateConnection(addr pubcluster.Address) (*Connection, error) {
+func (m *ConnectionManager) maybeCreateConnection(ctx context.Context, addr pubcluster.Address) (*Connection, error) {
 	// TODO: check whether we can create a connection
 	conn := m.createDefaultConnection()
-	if err := conn.start(m.clusterConfig, addr); err != nil {
+	if err := conn.Start(m.clusterConfig, addr); err != nil {
 		return nil, hzerrors.NewHazelcastTargetDisconnectedError(err.Error(), err)
-	} else if err = m.authenticate(conn); err != nil {
+	} else if err = m.authenticate(ctx, conn); err != nil {
 		conn.close(nil)
 		return nil, err
 	}
@@ -366,7 +402,7 @@ func (m *ConnectionManager) createDefaultConnection() *Connection {
 	}
 }
 
-func (m *ConnectionManager) authenticate(connection *Connection) error {
+func (m *ConnectionManager) authenticate(ctx context.Context, connection *Connection) error {
 	m.credentials.SetEndpoint(connection.socket.LocalAddr().String())
 	request := m.encodeAuthenticationRequest()
 	inv := m.invocationFactory.NewConnectionBoundInvocation(request, -1, nil, connection, nil)

@@ -17,6 +17,7 @@
 package invocation
 
 import (
+	"context"
 	"fmt"
 
 	ilogger "github.com/hazelcast/hazelcast-go-client/internal/logger"
@@ -28,10 +29,10 @@ type Handler interface {
 }
 
 type Service struct {
-	requestCh  <-chan Invocation
-	responseCh <-chan *proto.ClientMessage
-	// removeCh carries correlationIDs to be removed
-	removeCh    <-chan int64
+	//requestCh  chan Invocation
+	//responseCh <-chan *proto.ClientMessage
+	//// removeCh carries correlationIDs to be removed
+	//removeCh    chan int64
 	doneCh      chan struct{}
 	invocations map[int64]Invocation
 	handler     Handler
@@ -39,15 +40,15 @@ type Service struct {
 }
 
 func NewService(
-	requestCh <-chan Invocation,
-	responseCh <-chan *proto.ClientMessage,
-	removeCh <-chan int64,
+	//requestCh chan Invocation,
+	//responseCh <-chan *proto.ClientMessage,
+	//removeCh chan int64,
 	handler Handler,
 	logger ilogger.Logger) *Service {
 	service := &Service{
-		requestCh:   requestCh,
-		responseCh:  responseCh,
-		removeCh:    removeCh,
+		//requestCh:   requestCh,
+		//responseCh:  responseCh,
+		//removeCh:    removeCh,
 		doneCh:      make(chan struct{}),
 		invocations: map[int64]Invocation{},
 		handler:     handler,
@@ -63,6 +64,20 @@ func (s *Service) Stop() {
 
 func (s *Service) SetHandler(handler Handler) {
 	s.handler = handler
+}
+
+func (s *Service) Send(ctx context.Context, inv Invocation) error {
+	select {
+	case s.requestCh <- inv:
+		return nil
+	case <-ctx.Done():
+		s.removeInvocation(inv)
+		return ctx.Err()
+	}
+}
+
+func (s *Service) removeInvocation(inv Invocation) {
+	s.removeCh <- inv.Request().CorrelationID()
 }
 
 func (s *Service) processIncoming() {
@@ -86,10 +101,10 @@ loop:
 	s.invocations = nil
 }
 
-func (s *Service) sendInvocation(invocation Invocation) {
-	s.registerInvocation(invocation)
-	if err := s.handler.Invoke(invocation); err != nil {
-		s.handleError(invocation.Request().CorrelationID(), err)
+func (s *Service) sendInvocation(inv Invocation) {
+	s.registerInvocation(inv)
+	if err := s.handler.Invoke(inv); err != nil {
+		s.handleError(inv.Request().CorrelationID(), err)
 	}
 }
 
@@ -133,13 +148,13 @@ func (s *Service) handleError(correlationID int64, invocationErr error) {
 	}
 }
 
-func (s *Service) registerInvocation(invocation Invocation) {
-	message := invocation.Request()
+func (s *Service) registerInvocation(inv Invocation) {
+	message := inv.Request()
 	if message == nil {
 		panic("message loaded from invocation request is nil")
 	}
-	message.SetPartitionId(invocation.PartitionID())
-	s.invocations[message.CorrelationID()] = invocation
+	message.SetPartitionId(inv.PartitionID())
+	s.invocations[message.CorrelationID()] = inv
 }
 
 func (s *Service) unregisterInvocation(correlationID int64) Invocation {

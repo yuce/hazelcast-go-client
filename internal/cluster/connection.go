@@ -74,7 +74,7 @@ func (c *Connection) ConnectionID() int64 {
 	return c.connectionID
 }
 
-func (c *Connection) start(clusterCfg *pubcluster.Config, addr pubcluster.Address) error {
+func (c *Connection) Start(clusterCfg *pubcluster.Config, addr pubcluster.Address) error {
 	if socket, err := c.createSocket(clusterCfg, addr); err != nil {
 		return err
 	} else {

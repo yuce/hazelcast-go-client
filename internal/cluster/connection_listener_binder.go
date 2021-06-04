@@ -135,14 +135,20 @@ func (b *ConnectionListenerBinder) sendAddListenerRequests(ctx context.Context, 
 		return nil, nil
 	}
 	if len(conns) == 1 {
-		inv, corrID := b.sendAddListenerRequest(request, handler, conns[0])
-		_, err := inv.Get()
+		inv, corrID, err := b.sendAddListenerRequest(ctx, request, handler, conns[0])
+		if err != nil {
+			return nil, err
+		}
+		_, err = inv.Get()
 		return []int64{corrID}, err
 	}
 	invs := make([]invocation.Invocation, len(conns))
 	corrIDs := make([]int64, len(conns))
 	for i, conn := range conns {
-		inv, corrID := b.sendAddListenerRequest(request, handler, conn)
+		inv, corrID, err := b.sendAddListenerRequest(ctx, request, handler, conn)
+		if err != nil {
+			return nil, err
+		}
 		invs[i] = inv
 		corrIDs[i] = corrID
 	}
@@ -155,13 +161,18 @@ func (b *ConnectionListenerBinder) sendAddListenerRequests(ctx context.Context, 
 }
 
 func (b *ConnectionListenerBinder) sendAddListenerRequest(
+	ctx context.Context,
 	request *proto.ClientMessage,
 	handler proto.ClientMessageHandler,
-	conn *Connection) (invocation.Invocation, int64) {
+	conn *Connection) (invocation.Invocation, int64, error) {
 	inv := b.invocationFactory.NewConnectionBoundInvocation(request, -1, nil, conn, handler)
 	correlationID := inv.Request().CorrelationID()
-	b.requestCh <- inv
-	return inv, correlationID
+	select {
+	case b.requestCh <- inv:
+		return inv, correlationID, nil
+	case <-ctx.Done():
+		return nil, 0, ctx.Err()
+	}
 }
 
 func (b *ConnectionListenerBinder) sendRemoveListenerRequests(ctx context.Context, request *proto.ClientMessage, conns ...*Connection) error {

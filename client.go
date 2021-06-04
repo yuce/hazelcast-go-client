@@ -29,7 +29,6 @@ import (
 	"github.com/hazelcast/hazelcast-go-client/internal/event"
 	"github.com/hazelcast/hazelcast-go-client/internal/invocation"
 	ilogger "github.com/hazelcast/hazelcast-go-client/internal/logger"
-	"github.com/hazelcast/hazelcast-go-client/internal/proto"
 	iproxy "github.com/hazelcast/hazelcast-go-client/internal/proxy"
 	"github.com/hazelcast/hazelcast-go-client/internal/security"
 	"github.com/hazelcast/hazelcast-go-client/internal/serialization"
@@ -364,15 +363,17 @@ func (c *Client) createComponents(config *Config) {
 	addressProviders := []icluster.AddressProvider{
 		icluster.NewDefaultAddressProvider(&config.ClusterConfig),
 	}
-	requestCh := make(chan invocation.Invocation, 1024)
-	responseCh := make(chan *proto.ClientMessage, 1024)
-	removeCh := make(chan int64, 1024)
+	//requestCh := make(chan invocation.Invocation, 1024)
+	//responseCh := make(chan *proto.ClientMessage, 1024)
+	//removeCh := make(chan int64, 1024)
 	partitionService := icluster.NewPartitionService(icluster.PartitionServiceCreationBundle{
 		EventDispatcher: c.eventDispatcher,
 		Logger:          c.logger,
 	})
 	invocationFactory := icluster.NewConnectionInvocationFactory(&config.ClusterConfig)
-	clusterService := icluster.NewServiceImpl(icluster.CreationBundle{
+	invocationHandler := icluster.NewConnectionInvocationHandler(&config.ClusterConfig, c.logger)
+	invocationService := invocation.NewService(invocationHandler, c.logger)
+	clusterService := icluster.NewService(icluster.CreationBundle{
 		AddrProviders:     addressProviders,
 		RequestCh:         requestCh,
 		InvocationFactory: invocationFactory,
@@ -394,13 +395,6 @@ func (c *Client) createComponents(config *Config) {
 		Credentials:          credentials,
 		ClientName:           c.name,
 	})
-	invocationHandler := icluster.NewConnectionInvocationHandler(icluster.ConnectionInvocationHandlerCreationBundle{
-		ConnectionManager: connectionManager,
-		ClusterService:    clusterService,
-		Logger:            c.logger,
-		Config:            &config.ClusterConfig,
-	})
-	invocationService := invocation.NewService(requestCh, responseCh, removeCh, invocationHandler, c.logger)
 	listenerBinder := icluster.NewConnectionListenerBinder(
 		connectionManager,
 		invocationFactory,
