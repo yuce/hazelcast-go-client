@@ -53,7 +53,10 @@ const (
 	stopped
 )
 
-const serializationVersion = 1
+const (
+	serializationVersion = 1
+	clientType           = "GO0"
+)
 
 // ClientVersion is the build time version
 // TODO: This should be replace with a build time version variable, BuildInfo etc.
@@ -419,7 +422,7 @@ func (m *ConnectionManager) createAuthenticationRequest(creds *security.Username
 		creds.Username(),
 		creds.Password(),
 		m.clientUUID,
-		proto.ClientType,
+		clientType,
 		byte(serializationVersion),
 		ClientVersion,
 		m.clientName,
