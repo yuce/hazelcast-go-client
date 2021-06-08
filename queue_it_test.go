@@ -19,6 +19,7 @@ package hazelcast_test
 import (
 	"context"
 	"fmt"
+	"log"
 	"math"
 	"sync/atomic"
 	"testing"
@@ -165,13 +166,21 @@ func TestQueue_Drain(t *testing.T) {
 		}
 	})
 }
-func TestQueue_GetAll(t *testing.T) {
+func TestQueue_Iterator(t *testing.T) {
 	it.QueueTester(t, func(t *testing.T, q *hz.Queue) {
 		targetValues := []interface{}{int64(1), int64(2), int64(3), int64(4)}
 		it.MustValue(q.AddAll(context.Background(), targetValues...))
-		if values, err := q.GetAll(context.Background()); err != nil {
+		if decoder, err := q.Iterator(context.Background()); err != nil {
 			t.Fatal(err)
 		} else {
+			values := make([]interface{}, decoder.Len())
+			for i := 0; i < decoder.Len(); i++ {
+				if value, err := decoder.ValueAt(i); err != nil {
+					log.Fatal(err)
+				} else {
+					values[i] = value
+				}
+			}
 			assert.Equal(t, targetValues, values)
 		}
 	})

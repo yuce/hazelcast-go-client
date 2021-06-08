@@ -287,8 +287,8 @@ func TestMap_GetAll(t *testing.T) {
 		}
 		if kvs, err := m.GetAll(context.Background(), keys...); err != nil {
 			t.Fatal(err)
-		} else if !entriesEqualUnordered(target, kvs) {
-			t.Fatalf("target: %#v != %#v", target, kvs)
+		} else if !assert.ElementsMatch(t, target, kvs) {
+			t.FailNow()
 		}
 	})
 }
@@ -303,9 +303,8 @@ func TestMap_GetKeySet(t *testing.T) {
 		it.AssertEquals(t, "v1", it.MustValue(m.Get(context.Background(), "k1")))
 		it.AssertEquals(t, "v2", it.MustValue(m.Get(context.Background(), "k2")))
 		it.AssertEquals(t, "v3", it.MustValue(m.Get(context.Background(), "k3")))
-		if keys, err := m.GetKeySet(context.Background()); err != nil {
-			t.Fatal(err)
-		} else if !assert.ElementsMatch(t, targetKeySet, keys) {
+		keys := it.MustConsumeListDecoder(m.GetKeySet(context.Background()))
+		if !assert.ElementsMatch(t, targetKeySet, keys) {
 			t.FailNow()
 		}
 	})
@@ -316,9 +315,8 @@ func TestMap_GetKeySetWithPredicate(t *testing.T) {
 		it.Must(m.Set(context.Background(), serialization.JSON(`{"a": 5}`), "v1"))
 		it.Must(m.Set(context.Background(), serialization.JSON(`{"a": 10}`), "v2"))
 		it.Must(m.Set(context.Background(), serialization.JSON(`{"a": 15}`), "v3"))
-		if keys, err := m.GetKeySetWithPredicate(context.Background(), predicate.GreaterOrEqual("__key.a", 11)); err != nil {
-			t.Fatal(err)
-		} else if !assert.ElementsMatch(t, targetKeySet, keys) {
+		keys := it.MustConsumeListDecoder(m.GetKeySetWithPredicate(context.Background(), predicate.GreaterOrEqual("__key.a", 11)))
+		if !assert.ElementsMatch(t, targetKeySet, keys) {
 			t.FailNow()
 		}
 	})
@@ -334,9 +332,8 @@ func TestMap_GetValues(t *testing.T) {
 		it.AssertEquals(t, "v1", it.MustValue(m.Get(context.Background(), "k1")))
 		it.AssertEquals(t, "v2", it.MustValue(m.Get(context.Background(), "k2")))
 		it.AssertEquals(t, "v3", it.MustValue(m.Get(context.Background(), "k3")))
-		if values, err := m.GetValues(context.Background()); err != nil {
-			t.Fatal(err)
-		} else if !assert.ElementsMatch(t, targetValues, values) {
+		values := it.MustConsumeListDecoder(m.GetValues(context.Background()))
+		if !assert.ElementsMatch(t, targetValues, values) {
 			t.FailNow()
 		}
 	})
@@ -352,9 +349,8 @@ func TestMap_GetValuesWithPredicate(t *testing.T) {
 		it.AssertEquals(t, serialization.JSON(`{"A": 10, "B": 200}`), it.MustValue(m.Get(context.Background(), "k1")))
 		it.AssertEquals(t, serialization.JSON(`{"A": 10, "B": 30}`), it.MustValue(m.Get(context.Background(), "k2")))
 		it.AssertEquals(t, serialization.JSON(`{"A": 5, "B": 200}`), it.MustValue(m.Get(context.Background(), "k3")))
-		if values, err := m.GetValuesWithPredicate(context.Background(), predicate.Equal("A", 10)); err != nil {
-			t.Fatal(err)
-		} else if !assert.ElementsMatch(t, targetValues, values) {
+		values := it.MustConsumeListDecoder(m.GetValuesWithPredicate(context.Background(), predicate.Equal("A", 10)))
+		if !assert.ElementsMatch(t, targetValues, values) {
 			t.FailNow()
 		}
 	})

@@ -30,14 +30,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hazelcast/hazelcast-go-client/internal/proxy"
-
-	"go.uber.org/goleak"
-
 	"github.com/apache/thrift/lib/go/thrift"
 	hz "github.com/hazelcast/hazelcast-go-client"
+	"github.com/hazelcast/hazelcast-go-client/internal/proxy"
 	"github.com/hazelcast/hazelcast-go-client/logger"
 	"github.com/hazelcast/hazelcast-go-client/serialization"
+	"github.com/hazelcast/hazelcast-go-client/types"
 )
 
 const (
@@ -45,7 +43,6 @@ const (
 	EnvDisableNonsmart    = "DISABLE_NONSMART"
 	EnvEnableTraceLogging = "ENABLE_TRACE"
 	EnvMemberCount        = "MEMBER_COUNT"
-	EnvEnableLeakCheck    = "ENABLE_LEAKCHECK"
 	EnvEnableSSL          = "ENABLE_SSL"
 )
 
@@ -68,10 +65,6 @@ func Tester(t *testing.T, f func(t *testing.T, client *hz.Client)) {
 func TesterWithConfigBuilder(t *testing.T, cbCallback func(config *hz.Config), f func(t *testing.T, client *hz.Client)) {
 	ensureRemoteController(true)
 	runner := func(t *testing.T, smart bool) {
-		if LeakCheckEnabled() {
-			t.Logf("enabled leak check")
-			defer goleak.VerifyNone(t)
-		}
 		config := defaultTestCluster.DefaultConfig()
 		if cbCallback != nil {
 			cbCallback(&config)
@@ -188,6 +181,41 @@ func MustClient(client *hz.Client, err error) *hz.Client {
 	return client
 }
 
+func MustConsumeListDecoder(d types.ValueListDecoder, err error) []interface{} {
+	if err != nil {
+		panic(err)
+	}
+	vs, err := ConsumeListDecoder(d)
+	if err != nil {
+		panic(err)
+	}
+	return vs
+}
+
+func ConsumeListDecoder(d types.ValueListDecoder) ([]interface{}, error) {
+	ls := make([]interface{}, d.Len())
+	for i := 0; i < d.Len(); i++ {
+		if v, err := d.ValueAt(i); err != nil {
+			return nil, err
+		} else {
+			ls[i] = v
+		}
+	}
+	return ls, nil
+}
+
+func ConsumeEntryListDecoder(d types.EntryListDecoder) ([]interface{}, error) {
+	ls := make([]interface{}, d.Len())
+	for i := 0; i < d.Len(); i++ {
+		if v, err := d.EntryAt(i); err != nil {
+			return nil, err
+		} else {
+			ls[i] = v
+		}
+	}
+	return ls, nil
+}
+
 func TraceLoggingEnabled() bool {
 	return os.Getenv(EnvEnableTraceLogging) == "1"
 }
@@ -198,10 +226,6 @@ func SmartEnabled() bool {
 
 func NonSmartEnabled() bool {
 	return os.Getenv(EnvDisableNonsmart) != "1"
-}
-
-func LeakCheckEnabled() bool {
-	return os.Getenv(EnvEnableLeakCheck) == "1"
 }
 
 func SSLEnabled() bool {

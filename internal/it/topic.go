@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	hz "github.com/hazelcast/hazelcast-go-client"
-	"go.uber.org/goleak"
 )
 
 func TopicTester(t *testing.T, f func(t *testing.T, tp *hz.Topic)) {
@@ -40,10 +39,6 @@ func TopicTesterWithConfigAndName(t *testing.T, makeName func() string, cbCallba
 	)
 	ensureRemoteController(true)
 	runner := func(t *testing.T, smart bool) {
-		if LeakCheckEnabled() {
-			t.Logf("enabled leak check")
-			defer goleak.VerifyNone(t)
-		}
 		config := defaultTestCluster.DefaultConfig()
 		if cbCallback != nil {
 			cbCallback(&config)

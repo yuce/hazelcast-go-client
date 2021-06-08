@@ -22,6 +22,7 @@ import (
 
 	"github.com/hazelcast/hazelcast-go-client/internal/proto"
 	"github.com/hazelcast/hazelcast-go-client/internal/proto/codec"
+	iproxy "github.com/hazelcast/hazelcast-go-client/internal/proxy"
 	iserialization "github.com/hazelcast/hazelcast-go-client/internal/serialization"
 	"github.com/hazelcast/hazelcast-go-client/internal/util/validationutil"
 	"github.com/hazelcast/hazelcast-go-client/types"
@@ -150,13 +151,14 @@ func (q *Queue) DrainWithMaxSize(ctx context.Context, maxSize int) ([]interface{
 	}
 }
 
-// GetAll returns all of the items in this queue.
-func (q *Queue) GetAll(ctx context.Context) ([]interface{}, error) {
+// Iterator returns a lazy decoder with the items in this queue.
+func (q *Queue) Iterator(ctx context.Context) (*iproxy.LazyValueListDecoder, error) {
 	request := codec.EncodeQueueIteratorRequest(q.name)
 	if response, err := q.invokeOnPartition(ctx, request, q.partitionID); err != nil {
 		return nil, err
 	} else {
-		return q.convertToObjects(codec.DecodeQueueIteratorResponse(response))
+		items := codec.DecodeQueueIteratorResponse(response)
+		return iproxy.NewLazyValueListDecoder(items, q.serializationService), nil
 	}
 }
 

@@ -103,7 +103,7 @@ func TestPredicate_InstanceOf(t *testing.T) {
 		it.Must(m.Set(context.Background(), "k2", true))
 		it.Must(m.Set(context.Background(), "k3", 66))
 		pred := predicate.InstanceOf("java.lang.Boolean")
-		values := it.MustValue(m.GetValuesWithPredicate(context.Background(), pred))
+		values := it.MustConsumeListDecoder(m.GetValuesWithPredicate(context.Background(), pred))
 		target := []interface{}{true}
 		if !assert.Equal(t, target, values) {
 			t.FailNow()
@@ -196,7 +196,7 @@ func TestPredicate_True(t *testing.T) {
 func check(t *testing.T, pred predicate.Predicate, target []interface{}) {
 	it.MapTester(t, func(t *testing.T, m *hz.Map) {
 		createFixture(m)
-		values := it.MustValue(m.GetValuesWithPredicate(context.Background(), pred))
+		values := it.MustConsumeListDecoder(m.GetValuesWithPredicate(context.Background(), pred))
 		if !assert.Subset(t, target, values) {
 			t.FailNow()
 		}

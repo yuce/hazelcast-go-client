@@ -21,6 +21,7 @@ import (
 
 	"github.com/hazelcast/hazelcast-go-client/internal/proto"
 	"github.com/hazelcast/hazelcast-go-client/internal/proto/codec"
+	iproxy "github.com/hazelcast/hazelcast-go-client/internal/proxy"
 	iserialization "github.com/hazelcast/hazelcast-go-client/internal/serialization"
 	"github.com/hazelcast/hazelcast-go-client/internal/util/validationutil"
 	"github.com/hazelcast/hazelcast-go-client/types"
@@ -213,6 +214,17 @@ func (l *List) IsEmpty(ctx context.Context) (bool, error) {
 	return codec.DecodeListIsEmptyResponse(response), nil
 }
 
+// Iterator returns a lazy decoder with the items in this list.
+func (l *List) Iterator(ctx context.Context) (*iproxy.LazyValueListDecoder, error) {
+	request := codec.EncodeListIteratorRequest(l.name)
+	if resp, err := l.invokeOnPartition(ctx, request, l.partitionID); err != nil {
+		return nil, err
+	} else {
+		items := codec.DecodeListIteratorResponse(resp)
+		return iproxy.NewLazyValueListDecoder(items, l.serializationService), nil
+	}
+}
+
 // LastIndexOf returns the index of the last occurrence of the given element in this list.
 func (l *List) LastIndexOf(ctx context.Context, element interface{}) (int, error) {
 	elementData, err := l.validateAndSerialize(element)
@@ -225,6 +237,22 @@ func (l *List) LastIndexOf(ctx context.Context, element interface{}) (int, error
 		return 0, err
 	}
 	return int(codec.DecodeListLastIndexOfResponse(response)), nil
+}
+
+// ListIterator returns a list iterator of the elements in this list, starting with the given index.
+// The index must be nonnegative.
+func (l *List) ListIterator(ctx context.Context, index int) (*iproxy.LazyValueListDecoder, error) {
+	indexI32, err := validationutil.ValidateAsNonNegativeInt32(index)
+	if err != nil {
+		return nil, err
+	}
+	request := codec.EncodeListListIteratorRequest(l.name, indexI32)
+	if resp, err := l.invokeOnPartition(ctx, request, l.partitionID); err != nil {
+		return nil, err
+	} else {
+		items := codec.DecodeListIteratorResponse(resp)
+		return iproxy.NewLazyValueListDecoder(items, l.serializationService), nil
+	}
 }
 
 // Remove removes the given element from this list.

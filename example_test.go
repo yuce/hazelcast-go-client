@@ -57,11 +57,12 @@ func ExampleSet() {
 		log.Fatal(err)
 	}
 	ctx := context.Background()
-	// Retrieve the set named my-set
+	// Retrieve the set named my-set.
 	set, err := client.GetSet(ctx, "my-set")
 	if err != nil {
 		log.Fatal(err)
 	}
+	// Add values to the set.
 	_, err = set.AddAll(ctx, "item1", "item2", "item3", "item2", "item1")
 	if err != nil {
 		log.Fatal(err)
@@ -74,4 +75,68 @@ func ExampleSet() {
 	for _, item := range items {
 		fmt.Println("Item:", item)
 	}
+}
+
+func ExampleList_Iterator() {
+	// Create the Hazelcast client.
+	client, err := hazelcast.StartNewClient()
+	if err != nil {
+		log.Fatal(err)
+	}
+	ctx := context.Background()
+	// Retrieve the list named my-list.
+	ls, err := client.GetList(ctx, "my-list")
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Add values to the list.
+	_, err = ls.AddAll(ctx, "item1", "item2", "item3")
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Get a decoder that lazily unmarshals values
+	decoder, err := ls.Iterator(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// get the 2nd value.
+	value, err := decoder.ValueAt(1)
+	// check that there is no unmarshal error.
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(value)
+	// Output: item2
+}
+
+func ExampleQueue_Iterator() {
+	// Create the Hazelcast client.
+	client, err := hazelcast.StartNewClient()
+	if err != nil {
+		log.Fatal(err)
+	}
+	ctx := context.Background()
+	// Retrieve the queye named my-queue.
+	q, err := client.GetQueue(ctx, "my-queue")
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Add values to the queue.
+	_, err = q.AddAll(ctx, "item1", "item2", "item3")
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Get a decoder that lazily unmarshals values
+	decoder, err := q.Iterator(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// get the 2nd value.
+	value, err := decoder.ValueAt(1)
+	// check that there is no unmarshal error.
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(value)
+	// Output: item2
 }

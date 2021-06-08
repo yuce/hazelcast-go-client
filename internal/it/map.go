@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	hz "github.com/hazelcast/hazelcast-go-client"
-	"go.uber.org/goleak"
 )
 
 func MapTester(t *testing.T, f func(t *testing.T, m *hz.Map)) {
@@ -44,10 +43,6 @@ func MapTesterWithConfigAndName(t *testing.T, makeMapName func() string, configC
 	)
 	ensureRemoteController(true)
 	runner := func(t *testing.T, smart bool) {
-		if LeakCheckEnabled() {
-			t.Logf("enabled leak check")
-			defer goleak.VerifyNone(t)
-		}
 		config := defaultTestCluster.DefaultConfig()
 		if configCallback != nil {
 			configCallback(&config)

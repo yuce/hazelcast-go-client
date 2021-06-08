@@ -19,6 +19,7 @@ package hazelcast_test
 import (
 	"context"
 	"fmt"
+	"log"
 	"math"
 	"sync/atomic"
 	"testing"
@@ -235,7 +236,7 @@ func TestList_ContainsAllWithNilElement(t *testing.T) {
 	})
 }
 
-func TestList_ToSlice(t *testing.T) {
+func TestList_GetAll(t *testing.T) {
 	it.ListTester(t, func(t *testing.T, l *hz.List) {
 		res, err := l.GetAll(context.Background())
 		assert.NoError(t, err)
@@ -267,6 +268,26 @@ func TestList_IndexOfWithNilElement(t *testing.T) {
 	})
 }
 
+func TestList_Iterator(t *testing.T) {
+	it.ListTester(t, func(t *testing.T, l *hz.List) {
+		targetValues := []interface{}{int64(1), int64(2), int64(3), int64(4)}
+		it.MustValue(l.AddAll(context.Background(), targetValues...))
+		if result, err := l.Iterator(context.Background()); err != nil {
+			t.Fatal(err)
+		} else {
+			values := make([]interface{}, result.Len())
+			for i := 0; i < result.Len(); i++ {
+				if value, err := result.ValueAt(i); err != nil {
+					log.Fatal(err)
+				} else {
+					values[i] = value
+				}
+			}
+			assert.Equal(t, targetValues, values)
+		}
+	})
+}
+
 func TestList_IsEmpty(t *testing.T) {
 	it.ListTester(t, func(t *testing.T, l *hz.List) {
 		empty, err := l.IsEmpty(context.Background())
@@ -289,6 +310,37 @@ func TestList_LastIndexOfWithNilElement(t *testing.T) {
 	it.ListTester(t, func(t *testing.T, l *hz.List) {
 		_, err := l.LastIndexOf(context.Background(), nil)
 		assert.Error(t, err)
+	})
+}
+
+func TestList_ListIterator(t *testing.T) {
+	it.ListTester(t, func(t *testing.T, l *hz.List) {
+		it.MustValue(l.AddAll(context.Background(), int64(1), int64(2), int64(3), int64(4)))
+		if result, err := l.ListIterator(context.Background(), 2); err != nil {
+			t.Fatal(err)
+		} else {
+			targetValues := []interface{}{int64(3), int64(4)}
+			values := make([]interface{}, result.Len())
+			for i := 0; i < result.Len(); i++ {
+				if value, err := result.ValueAt(i); err != nil {
+					log.Fatal(err)
+				} else {
+					values[i] = value
+				}
+			}
+			assert.Equal(t, targetValues, values)
+		}
+	})
+}
+
+func TestList_ListIterator_InvalidIndex(t *testing.T) {
+	it.ListTester(t, func(t *testing.T, l *hz.List) {
+		if _, err := l.ListIterator(context.Background(), math.MaxInt32+1); err == nil {
+			t.Fatalf("should have failed")
+		}
+		if _, err := l.ListIterator(context.Background(), -1); err == nil {
+			t.Fatalf("should have failed")
+		}
 	})
 }
 

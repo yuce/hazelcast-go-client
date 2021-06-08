@@ -26,6 +26,7 @@ import (
 	"github.com/hazelcast/hazelcast-go-client/internal/cb"
 	"github.com/hazelcast/hazelcast-go-client/internal/proto"
 	"github.com/hazelcast/hazelcast-go-client/internal/proto/codec"
+	iproxy "github.com/hazelcast/hazelcast-go-client/internal/proxy"
 	iserialization "github.com/hazelcast/hazelcast-go-client/internal/serialization"
 	"github.com/hazelcast/hazelcast-go-client/predicate"
 	"github.com/hazelcast/hazelcast-go-client/types"
@@ -156,7 +157,7 @@ func (m *Map) EvictAll(ctx context.Context) error {
 }
 
 // ExecuteOnEntries applies the user defined EntryProcessor to all the entries in the map.
-func (m *Map) ExecuteOnEntries(ctx context.Context, entryProcessor interface{}) ([]types.Entry, error) {
+func (m *Map) ExecuteOnEntries(ctx context.Context, entryProcessor interface{}) (*iproxy.LazyEntryListDecoder, error) {
 	if processorData, err := m.validateAndSerialize(entryProcessor); err != nil {
 		return nil, err
 	} else {
@@ -165,11 +166,7 @@ func (m *Map) ExecuteOnEntries(ctx context.Context, entryProcessor interface{}) 
 			return nil, err
 		} else {
 			pairs := codec.DecodeMapExecuteOnAllKeysResponse(resp)
-			if kvPairs, err := m.convertPairsToEntries(pairs); err != nil {
-				return nil, err
-			} else {
-				return kvPairs, nil
-			}
+			return iproxy.NewLazyEntryListDecoder(pairs, m.serializationService), nil
 		}
 	}
 }
@@ -331,60 +328,35 @@ func (m *Map) GetEntryView(ctx context.Context, key interface{}) (*types.SimpleE
 	}
 }
 
-// GetKeySet returns keys contained in this map
-func (m *Map) GetKeySet(ctx context.Context) ([]interface{}, error) {
-	request := codec.EncodeMapKeySetRequest(m.name)
-	if response, err := m.invokeOnRandomTarget(ctx, request, nil); err != nil {
-		return nil, err
-	} else {
-		keyDatas := codec.DecodeMapKeySetResponse(response)
-		keys := make([]interface{}, len(keyDatas))
-		for i, keyData := range keyDatas {
-			if key, err := m.convertToObject(keyData); err != nil {
-				return nil, err
-			} else {
-				keys[i] = key
-			}
-		}
-		return keys, nil
-	}
+// GetKeySet returns keys contained in this map.
+func (m *Map) GetKeySet(ctx context.Context) (*iproxy.LazyValueListDecoder, error) {
+	r := codec.EncodeMapKeySetRequest(m.name)
+	return m.invokeAndMakeListDecoder(ctx, r, codec.DecodeMapKeySetResponse)
 }
 
-// GetKeySetWithPredicate returns keys contained in this map
-func (m *Map) GetKeySetWithPredicate(ctx context.Context, predicate predicate.Predicate) ([]interface{}, error) {
+// GetKeySetWithPredicate returns keys contained in this map.
+func (m *Map) GetKeySetWithPredicate(ctx context.Context, predicate predicate.Predicate) (*iproxy.LazyValueListDecoder, error) {
 	if predicateData, err := m.validateAndSerializePredicate(predicate); err != nil {
 		return nil, err
 	} else {
-		request := codec.EncodeMapKeySetWithPredicateRequest(m.name, predicateData)
-		if response, err := m.invokeOnRandomTarget(ctx, request, nil); err != nil {
-			return nil, err
-		} else {
-			return m.convertToObjects(codec.DecodeMapKeySetWithPredicateResponse(response))
-		}
+		r := codec.EncodeMapKeySetWithPredicateRequest(m.name, predicateData)
+		return m.invokeAndMakeListDecoder(ctx, r, codec.DecodeMapKeySetWithPredicateResponse)
 	}
 }
 
 // GetValues returns a list clone of the values contained in this map
-func (m *Map) GetValues(ctx context.Context) ([]interface{}, error) {
-	request := codec.EncodeMapValuesRequest(m.name)
-	if response, err := m.invokeOnRandomTarget(ctx, request, nil); err != nil {
-		return nil, err
-	} else {
-		return m.convertToObjects(codec.DecodeMapValuesResponse(response))
-	}
+func (m *Map) GetValues(ctx context.Context) (*iproxy.LazyValueListDecoder, error) {
+	r := codec.EncodeMapValuesRequest(m.name)
+	return m.invokeAndMakeListDecoder(ctx, r, codec.DecodeMapValuesResponse)
 }
 
 // GetValuesWithPredicate returns a list clone of the values contained in this map
-func (m *Map) GetValuesWithPredicate(ctx context.Context, predicate predicate.Predicate) ([]interface{}, error) {
+func (m *Map) GetValuesWithPredicate(ctx context.Context, predicate predicate.Predicate) (*iproxy.LazyValueListDecoder, error) {
 	if predicateData, err := m.validateAndSerializePredicate(predicate); err != nil {
 		return nil, err
 	} else {
-		request := codec.EncodeMapValuesWithPredicateRequest(m.name, predicateData)
-		if response, err := m.invokeOnRandomTarget(ctx, request, nil); err != nil {
-			return nil, err
-		} else {
-			return m.convertToObjects(codec.DecodeMapValuesWithPredicateResponse(response))
-		}
+		r := codec.EncodeMapValuesWithPredicateRequest(m.name, predicateData)
+		return m.invokeAndMakeListDecoder(ctx, r, codec.DecodeMapValuesWithPredicateResponse)
 	}
 }
 
@@ -989,6 +961,14 @@ func (m *Map) tryRemove(ctx context.Context, key interface{}, timeout int64) (in
 		} else {
 			return codec.DecodeMapTryRemoveResponse(response), nil
 		}
+	}
+}
+
+func (m *Map) invokeAndMakeListDecoder(ctx context.Context, request *proto.ClientMessage, f func(*proto.ClientMessage) []*iserialization.Data) (*iproxy.LazyValueListDecoder, error) {
+	if response, err := m.invokeOnRandomTarget(ctx, request, nil); err != nil {
+		return nil, err
+	} else {
+		return iproxy.NewLazyValueListDecoder(f(response), m.serializationService), nil
 	}
 }
 
