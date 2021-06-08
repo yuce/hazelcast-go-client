@@ -55,7 +55,7 @@ const (
 
 const (
 	serializationVersion = 1
-	clientType           = "GO0"
+	clientType           = "GOO"
 )
 
 // ClientVersion is the build time version
