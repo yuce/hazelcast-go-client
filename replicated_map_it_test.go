@@ -19,7 +19,6 @@ package hazelcast_test
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -97,28 +96,22 @@ func TestReplicatedMap_GetEntrySet(t *testing.T) {
 			t.Fatal(err)
 		}
 		time.Sleep(1 * time.Second)
-		if entries, err := m.GetEntrySet(context.Background()); err != nil {
-			t.Fatal(err)
-		} else if !entriesEqualUnordered(target, entries) {
-			t.Fatalf("target: %#v != %#v", target, entries)
-		}
+		entries := it.MustConsumeEntryListHolder(m.GetEntrySet(context.Background()))
+		assert.ElementsMatch(t, target, entries)
 	})
 }
 
 func TestReplicatedMap_GetKeySet(t *testing.T) {
 	it.ReplicatedMapTester(t, func(t *testing.T, m *hz.ReplicatedMap) {
-		targetKeySet := []interface{}{"k1", "k2", "k3"}
+		target := []interface{}{"k1", "k2", "k3"}
 		it.MustValue(m.Put(context.Background(), "k1", "v1"))
 		it.MustValue(m.Put(context.Background(), "k2", "v2"))
 		it.MustValue(m.Put(context.Background(), "k3", "v3"))
 		it.AssertEquals(t, "v1", it.MustValue(m.Get(context.Background(), "k1")))
 		it.AssertEquals(t, "v2", it.MustValue(m.Get(context.Background(), "k2")))
 		it.AssertEquals(t, "v3", it.MustValue(m.Get(context.Background(), "k3")))
-		if keys, err := m.GetKeySet(context.Background()); err != nil {
-			t.Fatal(err)
-		} else if !reflect.DeepEqual(makeStringSet(targetKeySet), makeStringSet(keys)) {
-			t.Fatalf("target: %#v != %#v", targetKeySet, keys)
-		}
+		keys := it.MustConsumeValueListHolder(m.GetKeySet(context.Background()))
+		assert.ElementsMatch(t, target, keys)
 	})
 }
 func TestReplicatedMap_GetValues(t *testing.T) {
@@ -130,11 +123,8 @@ func TestReplicatedMap_GetValues(t *testing.T) {
 		it.AssertEquals(t, "v1", it.MustValue(m.Get(context.Background(), "k1")))
 		it.AssertEquals(t, "v2", it.MustValue(m.Get(context.Background(), "k2")))
 		it.AssertEquals(t, "v3", it.MustValue(m.Get(context.Background(), "k3")))
-		if values, err := m.GetValues(context.Background()); err != nil {
-			t.Fatal(err)
-		} else if !reflect.DeepEqual(makeStringSet(targetValues), makeStringSet(values)) {
-			t.Fatalf("target: %#v != %#v", targetValues, values)
-		}
+		values := it.MustConsumeValueListHolder(m.GetValues(context.Background()))
+		assert.ElementsMatch(t, targetValues, values)
 	})
 }
 

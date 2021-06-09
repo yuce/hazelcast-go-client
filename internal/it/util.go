@@ -181,18 +181,18 @@ func MustClient(client *hz.Client, err error) *hz.Client {
 	return client
 }
 
-func MustConsumeListDecoder(d types.ValueListDecoder, err error) []interface{} {
+func MustConsumeValueListHolder(d types.LazyValueListHolder, err error) []interface{} {
 	if err != nil {
 		panic(err)
 	}
-	vs, err := ConsumeListDecoder(d)
+	vs, err := ConsumeValueListHolder(d)
 	if err != nil {
 		panic(err)
 	}
 	return vs
 }
 
-func ConsumeListDecoder(d types.ValueListDecoder) ([]interface{}, error) {
+func ConsumeValueListHolder(d types.LazyValueListHolder) ([]interface{}, error) {
 	ls := make([]interface{}, d.Len())
 	for i := 0; i < d.Len(); i++ {
 		if v, err := d.ValueAt(i); err != nil {
@@ -204,8 +204,19 @@ func ConsumeListDecoder(d types.ValueListDecoder) ([]interface{}, error) {
 	return ls, nil
 }
 
-func ConsumeEntryListDecoder(d types.EntryListDecoder) ([]interface{}, error) {
-	ls := make([]interface{}, d.Len())
+func MustConsumeEntryListHolder(d types.LazyEntryListHolder, err error) []types.Entry {
+	if err != nil {
+		panic(err)
+	}
+	es, err := ConsumeEntryListHolder(d)
+	if err != nil {
+		panic(err)
+	}
+	return es
+}
+
+func ConsumeEntryListHolder(d types.LazyEntryListHolder) ([]types.Entry, error) {
+	ls := make([]types.Entry, d.Len())
 	for i := 0; i < d.Len(); i++ {
 		if v, err := d.EntryAt(i); err != nil {
 			return nil, err

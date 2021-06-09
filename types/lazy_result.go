@@ -16,12 +16,24 @@
 
 package types
 
-type ValueListDecoder interface {
+// LazyValueListHolder contains values which can be accessed by an index.
+// The values are decoded lazily when accessed.
+type LazyValueListHolder interface {
+	// Len returns the number of values.
 	Len() int
+	// ValueAt returns the value at the given index.
+	// If index is not in the range, it panics.
+	// The value is decoded on demand.
 	ValueAt(index int) (interface{}, error)
 }
 
-type EntryListDecoder interface {
+// LazyEntryListHolder contains values which can be accessed by an index.
+// The values are decoded lazily when accessed.
+type LazyEntryListHolder interface {
+	// Len returns the number of entries.
 	Len() int
+	// EntryAt returns the value at the given index.
+	// If index is not in the range, it panics.
+	// The entry is decoded on demand.
 	EntryAt(index int) (Entry, error)
 }

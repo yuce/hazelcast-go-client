@@ -285,11 +285,9 @@ func TestMap_GetAll(t *testing.T) {
 		for _, pair := range allPairs {
 			it.AssertEquals(t, pair.Value, it.MustValue(m.Get(context.Background(), pair.Key)))
 		}
-		if kvs, err := m.GetAll(context.Background(), keys...); err != nil {
-			t.Fatal(err)
-		} else if !assert.ElementsMatch(t, target, kvs) {
-			t.FailNow()
-		}
+		dec, err := m.GetAll(context.Background(), keys...)
+		kvs := it.MustConsumeEntryListHolder(dec, err)
+		assert.ElementsMatch(t, target, kvs)
 	})
 }
 
@@ -303,10 +301,8 @@ func TestMap_GetKeySet(t *testing.T) {
 		it.AssertEquals(t, "v1", it.MustValue(m.Get(context.Background(), "k1")))
 		it.AssertEquals(t, "v2", it.MustValue(m.Get(context.Background(), "k2")))
 		it.AssertEquals(t, "v3", it.MustValue(m.Get(context.Background(), "k3")))
-		keys := it.MustConsumeListDecoder(m.GetKeySet(context.Background()))
-		if !assert.ElementsMatch(t, targetKeySet, keys) {
-			t.FailNow()
-		}
+		keys := it.MustConsumeValueListHolder(m.GetKeySet(context.Background()))
+		assert.ElementsMatch(t, targetKeySet, keys)
 	})
 }
 func TestMap_GetKeySetWithPredicate(t *testing.T) {
@@ -315,10 +311,8 @@ func TestMap_GetKeySetWithPredicate(t *testing.T) {
 		it.Must(m.Set(context.Background(), serialization.JSON(`{"a": 5}`), "v1"))
 		it.Must(m.Set(context.Background(), serialization.JSON(`{"a": 10}`), "v2"))
 		it.Must(m.Set(context.Background(), serialization.JSON(`{"a": 15}`), "v3"))
-		keys := it.MustConsumeListDecoder(m.GetKeySetWithPredicate(context.Background(), predicate.GreaterOrEqual("__key.a", 11)))
-		if !assert.ElementsMatch(t, targetKeySet, keys) {
-			t.FailNow()
-		}
+		keys := it.MustConsumeValueListHolder(m.GetKeySetWithPredicate(context.Background(), predicate.GreaterOrEqual("__key.a", 11)))
+		assert.ElementsMatch(t, targetKeySet, keys)
 	})
 }
 
@@ -332,10 +326,8 @@ func TestMap_GetValues(t *testing.T) {
 		it.AssertEquals(t, "v1", it.MustValue(m.Get(context.Background(), "k1")))
 		it.AssertEquals(t, "v2", it.MustValue(m.Get(context.Background(), "k2")))
 		it.AssertEquals(t, "v3", it.MustValue(m.Get(context.Background(), "k3")))
-		values := it.MustConsumeListDecoder(m.GetValues(context.Background()))
-		if !assert.ElementsMatch(t, targetValues, values) {
-			t.FailNow()
-		}
+		values := it.MustConsumeValueListHolder(m.GetValues(context.Background()))
+		assert.ElementsMatch(t, targetValues, values)
 	})
 }
 
@@ -349,10 +341,8 @@ func TestMap_GetValuesWithPredicate(t *testing.T) {
 		it.AssertEquals(t, serialization.JSON(`{"A": 10, "B": 200}`), it.MustValue(m.Get(context.Background(), "k1")))
 		it.AssertEquals(t, serialization.JSON(`{"A": 10, "B": 30}`), it.MustValue(m.Get(context.Background(), "k2")))
 		it.AssertEquals(t, serialization.JSON(`{"A": 5, "B": 200}`), it.MustValue(m.Get(context.Background(), "k3")))
-		values := it.MustConsumeListDecoder(m.GetValuesWithPredicate(context.Background(), predicate.Equal("A", 10)))
-		if !assert.ElementsMatch(t, targetValues, values) {
-			t.FailNow()
-		}
+		values := it.MustConsumeValueListHolder(m.GetValuesWithPredicate(context.Background(), predicate.Equal("A", 10)))
+		assert.ElementsMatch(t, targetValues, values)
 	})
 }
 
@@ -384,11 +374,8 @@ func TestMap_GetEntrySet(t *testing.T) {
 			t.Fatal(err)
 		}
 		time.Sleep(1 * time.Second)
-		if entries, err := m.GetEntrySet(context.Background()); err != nil {
-			t.Fatal(err)
-		} else if !entriesEqualUnordered(target, entries) {
-			t.Fatalf("target: %#v != %#v", target, entries)
-		}
+		entries := it.MustConsumeEntryListHolder(m.GetEntrySet(context.Background()))
+		assert.ElementsMatch(t, target, entries)
 	})
 }
 
@@ -412,11 +399,9 @@ func TestMap_GetEntrySetWithPredicateUsingPortable(t *testing.T) {
 			types.NewEntry("k1", &it.SamplePortable{A: okValue, B: 10}),
 			types.NewEntry("k3", &it.SamplePortable{A: okValue, B: 10}),
 		}
-		if entries, err := m.GetEntrySetWithPredicate(context.Background(), predicate.And(predicate.Equal("A", okValue), predicate.Equal("B", 10))); err != nil {
-			t.Fatal(err)
-		} else if !entriesEqualUnordered(target, entries) {
-			t.Fatalf("target: %#v != %#v", target, entries)
-		}
+		decoder, err := m.GetEntrySetWithPredicate(context.Background(), predicate.And(predicate.Equal("A", okValue), predicate.Equal("B", 10)))
+		entries = it.MustConsumeEntryListHolder(decoder, err)
+		assert.ElementsMatch(t, target, entries)
 	})
 }
 
@@ -435,11 +420,9 @@ func TestMap_GetEntrySetWithPredicateUsingJSON(t *testing.T) {
 			types.NewEntry("k1", it.SamplePortable{A: "foo", B: 10}.Json()),
 			types.NewEntry("k3", it.SamplePortable{A: "foo", B: 10}.Json()),
 		}
-		if entries, err := m.GetEntrySetWithPredicate(context.Background(), predicate.And(predicate.Equal("A", "foo"), predicate.Equal("B", 10))); err != nil {
-			t.Fatal(err)
-		} else if !entriesEqualUnordered(target, entries) {
-			t.Fatalf("target: %#v != %#v", target, entries)
-		}
+		decoder, err := m.GetEntrySetWithPredicate(context.Background(), predicate.And(predicate.Equal("A", "foo"), predicate.Equal("B", 10)))
+		entries = it.MustConsumeEntryListHolder(decoder, err)
+		assert.ElementsMatch(t, target, entries)
 	})
 }
 
@@ -536,14 +519,12 @@ func TestMap_LoadAllWithoutReplacing(t *testing.T) {
 		it.Must(m.PutTransient(context.Background(), "k1", "new-v1"))
 		time.Sleep(1 * time.Second)
 		it.Must(m.LoadAllWithoutReplacing(context.Background(), "k0", "k1"))
-		targetEntrySet := []types.Entry{
+		target := []types.Entry{
 			{Key: "k0", Value: "new-v0"},
 			{Key: "k1", Value: "new-v1"},
 		}
-		entrySet := it.MustValue(m.GetAll(context.Background(), "k0", "k1")).([]types.Entry)
-		if !entriesEqualUnordered(targetEntrySet, entrySet) {
-			t.Fatalf("target %#v != %#v", targetEntrySet, entrySet)
-		}
+		entries := it.MustConsumeEntryListHolder(m.GetAll(context.Background(), "k0", "k1"))
+		assert.ElementsMatch(t, target, entries)
 	})
 }
 
@@ -555,16 +536,16 @@ func TestMap_LoadAllReplacing(t *testing.T) {
 		keys := putSampleKeyValues(m, 10)
 		it.Must(m.EvictAll(context.Background()))
 		it.Must(m.LoadAllReplacing(context.Background()))
-		entrySet := it.MustValue(m.GetAll(context.Background(), keys...)).([]types.Entry)
-		if len(keys) != len(entrySet) {
-			t.Fatalf("target len: %d != %d", len(keys), len(entrySet))
+		entries := it.MustConsumeEntryListHolder(m.GetAll(context.Background(), keys...))
+		if len(keys) != len(entries) {
+			t.Fatalf("target len: %d != %d", len(keys), len(entries))
 		}
 		it.Must(m.EvictAll(context.Background()))
 		keys = keys[:5]
 		it.Must(m.LoadAllReplacing(context.Background(), keys...))
-		entrySet = it.MustValue(m.GetAll(context.Background(), keys...)).([]types.Entry)
-		if len(keys) != len(entrySet) {
-			t.Fatalf("target len: %d != %d", len(keys), len(entrySet))
+		entries = it.MustConsumeEntryListHolder(m.GetAll(context.Background(), keys...))
+		if len(keys) != len(entries) {
+			t.Fatalf("target len: %d != %d", len(keys), len(entries))
 		}
 	})
 }
@@ -676,12 +657,8 @@ func TestMap_RemoveAll(t *testing.T) {
 		target := []types.Entry{
 			types.NewEntry("k2", &it.SamplePortable{A: "foo", B: 15}),
 		}
-		if kvs, err := m.GetAll(context.Background(), "k1", "k2", "k3"); err != nil {
-			t.Fatal(err)
-		} else if !entriesEqualUnordered(target, kvs) {
-			t.Fatalf("target: %#v != %#v", target, kvs)
-		}
-
+		kvs := it.MustConsumeEntryListHolder(m.GetAll(context.Background(), "k1", "k2", "k3"))
+		assert.ElementsMatch(t, target, kvs)
 	})
 }
 

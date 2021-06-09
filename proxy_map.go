@@ -162,12 +162,7 @@ func (m *Map) ExecuteOnEntries(ctx context.Context, entryProcessor interface{}) 
 		return nil, err
 	} else {
 		request := codec.EncodeMapExecuteOnAllKeysRequest(m.name, processorData)
-		if resp, err := m.invokeOnRandomTarget(ctx, request, nil); err != nil {
-			return nil, err
-		} else {
-			pairs := codec.DecodeMapExecuteOnAllKeysResponse(resp)
-			return iproxy.NewLazyEntryListDecoder(pairs, m.serializationService), nil
-		}
+		return m.invokeRandomMakeEntryDecoder(ctx, request, codec.DecodeMapExecuteOnAllKeysResponse)
 	}
 }
 
@@ -210,9 +205,9 @@ func (m *Map) Get(ctx context.Context, key interface{}) (interface{}, error) {
 }
 
 // GetAll returns the entries for the given keys.
-func (m *Map) GetAll(ctx context.Context, keys ...interface{}) ([]types.Entry, error) {
+func (m *Map) GetAll(ctx context.Context, keys ...interface{}) (*iproxy.LazyEntryListDecoder, error) {
 	if len(keys) == 0 {
-		return nil, nil
+		return iproxy.NewLazyEntryListDecoder(nil, m.serializationService), nil
 	}
 	if ctx == nil {
 		ctx = context.Background()
@@ -222,16 +217,13 @@ func (m *Map) GetAll(ctx context.Context, keys ...interface{}) ([]types.Entry, e
 	for _, key := range keys {
 		if keyData, err := m.validateAndSerialize(key); err != nil {
 			return nil, err
+		} else if partitionKey, err := ps.GetPartitionID(keyData); err != nil {
+			return nil, err
 		} else {
-			if partitionKey, err := ps.GetPartitionID(keyData); err != nil {
-				return nil, err
-			} else {
-				arr := partitionToKeys[partitionKey]
-				partitionToKeys[partitionKey] = append(arr, keyData)
-			}
+			arr := partitionToKeys[partitionKey]
+			partitionToKeys[partitionKey] = append(arr, keyData)
 		}
 	}
-	result := make([]types.Entry, 0, len(keys))
 	// create futures
 	f := func(partitionID int32, keys []*iserialization.Data) cb.Future {
 		request := codec.EncodeMapGetAllRequest(m.name, keys)
@@ -246,47 +238,33 @@ func (m *Map) GetAll(ctx context.Context, keys ...interface{}) ([]types.Entry, e
 	for partitionID, keys := range partitionToKeys {
 		futures = append(futures, f(partitionID, keys))
 	}
+	result := make([]proto.Pair, 0, len(keys))
 	for _, future := range futures {
-		if futureResult, err := future.Result(); err != nil {
+		futureResult, err := future.Result()
+		if err != nil {
 			return nil, err
-		} else {
-			pairs := codec.DecodeMapGetAllResponse(futureResult.(*proto.ClientMessage))
-			var key, value interface{}
-			var err error
-			for _, pair := range pairs {
-				if key, err = m.convertToObject(pair.Key().(*iserialization.Data)); err != nil {
-					return nil, err
-				} else if value, err = m.convertToObject(pair.Value().(*iserialization.Data)); err != nil {
-					return nil, err
-				}
-				result = append(result, types.NewEntry(key, value))
-			}
+		}
+		pairs := codec.DecodeMapGetAllResponse(futureResult.(*proto.ClientMessage))
+		for _, pair := range pairs {
+			result = append(result, pair)
 		}
 	}
-	return result, nil
+	return iproxy.NewLazyEntryListDecoder(result, m.serializationService), nil
 }
 
 // GetEntrySet returns a clone of the mappings contained in this map.
-func (m *Map) GetEntrySet(ctx context.Context) ([]types.Entry, error) {
+func (m *Map) GetEntrySet(ctx context.Context) (*iproxy.LazyEntryListDecoder, error) {
 	request := codec.EncodeMapEntrySetRequest(m.name)
-	if response, err := m.invokeOnRandomTarget(ctx, request, nil); err != nil {
-		return nil, err
-	} else {
-		return m.convertPairsToEntries(codec.DecodeMapEntrySetResponse(response))
-	}
+	return m.invokeRandomMakeEntryDecoder(ctx, request, codec.DecodeMapEntrySetResponse)
 }
 
 // GetEntrySetWithPredicate returns a clone of the mappings contained in this map.
-func (m *Map) GetEntrySetWithPredicate(ctx context.Context, predicate predicate.Predicate) ([]types.Entry, error) {
+func (m *Map) GetEntrySetWithPredicate(ctx context.Context, predicate predicate.Predicate) (*iproxy.LazyEntryListDecoder, error) {
 	if predData, err := m.validateAndSerialize(predicate); err != nil {
 		return nil, err
 	} else {
 		request := codec.EncodeMapEntriesWithPredicateRequest(m.name, predData)
-		if response, err := m.invokeOnRandomTarget(ctx, request, nil); err != nil {
-			return nil, err
-		} else {
-			return m.convertPairsToEntries(codec.DecodeMapEntriesWithPredicateResponse(response))
-		}
+		return m.invokeRandomMakeEntryDecoder(ctx, request, codec.DecodeMapEntriesWithPredicateResponse)
 	}
 }
 
@@ -331,7 +309,7 @@ func (m *Map) GetEntryView(ctx context.Context, key interface{}) (*types.SimpleE
 // GetKeySet returns keys contained in this map.
 func (m *Map) GetKeySet(ctx context.Context) (*iproxy.LazyValueListDecoder, error) {
 	r := codec.EncodeMapKeySetRequest(m.name)
-	return m.invokeAndMakeListDecoder(ctx, r, codec.DecodeMapKeySetResponse)
+	return m.invokeRandomMakeValueDecoder(ctx, r, codec.DecodeMapKeySetResponse)
 }
 
 // GetKeySetWithPredicate returns keys contained in this map.
@@ -340,14 +318,14 @@ func (m *Map) GetKeySetWithPredicate(ctx context.Context, predicate predicate.Pr
 		return nil, err
 	} else {
 		r := codec.EncodeMapKeySetWithPredicateRequest(m.name, predicateData)
-		return m.invokeAndMakeListDecoder(ctx, r, codec.DecodeMapKeySetWithPredicateResponse)
+		return m.invokeRandomMakeValueDecoder(ctx, r, codec.DecodeMapKeySetWithPredicateResponse)
 	}
 }
 
 // GetValues returns a list clone of the values contained in this map
 func (m *Map) GetValues(ctx context.Context) (*iproxy.LazyValueListDecoder, error) {
 	r := codec.EncodeMapValuesRequest(m.name)
-	return m.invokeAndMakeListDecoder(ctx, r, codec.DecodeMapValuesResponse)
+	return m.invokeRandomMakeValueDecoder(ctx, r, codec.DecodeMapValuesResponse)
 }
 
 // GetValuesWithPredicate returns a list clone of the values contained in this map
@@ -356,7 +334,7 @@ func (m *Map) GetValuesWithPredicate(ctx context.Context, predicate predicate.Pr
 		return nil, err
 	} else {
 		r := codec.EncodeMapValuesWithPredicateRequest(m.name, predicateData)
-		return m.invokeAndMakeListDecoder(ctx, r, codec.DecodeMapValuesWithPredicateResponse)
+		return m.invokeRandomMakeValueDecoder(ctx, r, codec.DecodeMapValuesWithPredicateResponse)
 	}
 }
 
@@ -438,13 +416,13 @@ func (m *Map) LockWithLease(ctx context.Context, key interface{}, leaseTime time
 
 // Put sets the value for the given key and returns the old value.
 func (m *Map) Put(ctx context.Context, key interface{}, value interface{}) (interface{}, error) {
-	return m.putWıthTTL(ctx, key, value, ttlUnset)
+	return m.putWithTTL(ctx, key, value, ttlUnset)
 }
 
 // PutWithTTL sets the value for the given key and returns the old value.
 // Entry will expire and get evicted after the ttl.
 func (m *Map) PutWithTTL(ctx context.Context, key interface{}, value interface{}, ttl time.Duration) (interface{}, error) {
-	return m.putWıthTTL(ctx, key, value, ttl.Milliseconds())
+	return m.putWithTTL(ctx, key, value, ttl.Milliseconds())
 }
 
 // PutWithMaxIdle sets the value for the given key and returns the old value.
@@ -818,7 +796,7 @@ func (m *Map) lock(ctx context.Context, key interface{}, ttl int64) error {
 	}
 }
 
-func (m *Map) putWıthTTL(ctx context.Context, key interface{}, value interface{}, ttl int64) (interface{}, error) {
+func (m *Map) putWithTTL(ctx context.Context, key interface{}, value interface{}, ttl int64) (interface{}, error) {
 	lid := extractLockID(ctx)
 	if keyData, valueData, err := m.validateAndSerialize2(key, value); err != nil {
 		return nil, err
@@ -961,14 +939,6 @@ func (m *Map) tryRemove(ctx context.Context, key interface{}, timeout int64) (in
 		} else {
 			return codec.DecodeMapTryRemoveResponse(response), nil
 		}
-	}
-}
-
-func (m *Map) invokeAndMakeListDecoder(ctx context.Context, request *proto.ClientMessage, f func(*proto.ClientMessage) []*iserialization.Data) (*iproxy.LazyValueListDecoder, error) {
-	if response, err := m.invokeOnRandomTarget(ctx, request, nil); err != nil {
-		return nil, err
-	} else {
-		return iproxy.NewLazyValueListDecoder(f(response), m.serializationService), nil
 	}
 }
 

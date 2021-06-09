@@ -268,6 +268,52 @@ func (p *proxy) invokeOnPartitionAsync(ctx context.Context, request *proto.Clien
 	return inv, err
 }
 
+func (p *proxy) invokeRandomMakeValueDecoder(
+	ctx context.Context,
+	request *proto.ClientMessage,
+	f func(*proto.ClientMessage) []*iserialization.Data) (*iproxy.LazyValueListDecoder, error) {
+	response, err := p.invokeOnRandomTarget(ctx, request, nil)
+	if err != nil {
+		return nil, err
+	}
+	return iproxy.NewLazyValueListDecoder(f(response), p.serializationService), nil
+}
+
+func (p *proxy) invokePartitionMakeValueDecoder(
+	ctx context.Context,
+	request *proto.ClientMessage,
+	partitionID int32,
+	f func(*proto.ClientMessage) []*iserialization.Data) (*iproxy.LazyValueListDecoder, error) {
+	response, err := p.invokeOnPartition(ctx, request, partitionID)
+	if err != nil {
+		return nil, err
+	}
+	return iproxy.NewLazyValueListDecoder(f(response), p.serializationService), nil
+}
+
+func (p *proxy) invokeRandomMakeEntryDecoder(
+	ctx context.Context,
+	request *proto.ClientMessage,
+	f func(*proto.ClientMessage) []proto.Pair) (*iproxy.LazyEntryListDecoder, error) {
+	response, err := p.invokeOnRandomTarget(ctx, request, nil)
+	if err != nil {
+		return nil, err
+	}
+	return iproxy.NewLazyEntryListDecoder(f(response), p.serializationService), nil
+}
+
+func (p *proxy) invokePartitionMakeEntryDecoder(
+	ctx context.Context,
+	request *proto.ClientMessage,
+	partitionID int32,
+	f func(*proto.ClientMessage) []proto.Pair) (*iproxy.LazyEntryListDecoder, error) {
+	response, err := p.invokeOnPartition(ctx, request, partitionID)
+	if err != nil {
+		return nil, err
+	}
+	return iproxy.NewLazyEntryListDecoder(f(response), p.serializationService), nil
+}
+
 func (p *proxy) convertToObject(data *iserialization.Data) (interface{}, error) {
 	return p.serializationService.ToObject(data)
 }

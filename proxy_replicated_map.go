@@ -125,51 +125,21 @@ func (m *ReplicatedMap) Get(ctx context.Context, key interface{}) (interface{}, 
 }
 
 // GetEntrySet returns a clone of the mappings contained in this map.
-func (m *ReplicatedMap) GetEntrySet(ctx context.Context) ([]types.Entry, error) {
+func (m *ReplicatedMap) GetEntrySet(ctx context.Context) (*iproxy.LazyEntryListDecoder, error) {
 	request := codec.EncodeReplicatedMapEntrySetRequest(m.name)
-	if response, err := m.invokeOnPartition(ctx, request, m.partitionID); err != nil {
-		return nil, err
-	} else {
-		return m.convertPairsToEntries(codec.DecodeReplicatedMapEntrySetResponse(response))
-	}
+	return m.invokePartitionMakeEntryDecoder(ctx, request, m.partitionID, codec.DecodeReplicatedMapEntrySetResponse)
 }
 
 // GetKeySet returns keys contained in this map
-func (m *ReplicatedMap) GetKeySet(ctx context.Context) ([]interface{}, error) {
+func (m *ReplicatedMap) GetKeySet(ctx context.Context) (*iproxy.LazyValueListDecoder, error) {
 	request := codec.EncodeReplicatedMapKeySetRequest(m.name)
-	if response, err := m.invokeOnPartition(ctx, request, m.partitionID); err != nil {
-		return nil, err
-	} else {
-		keyDatas := codec.DecodeReplicatedMapKeySetResponse(response)
-		keys := make([]interface{}, len(keyDatas))
-		for i, keyData := range keyDatas {
-			if key, err := m.convertToObject(keyData); err != nil {
-				return nil, err
-			} else {
-				keys[i] = key
-			}
-		}
-		return keys, nil
-	}
+	return m.invokePartitionMakeValueDecoder(ctx, request, m.partitionID, codec.DecodeReplicatedMapKeySetResponse)
 }
 
 // GetValues returns a list clone of the values contained in this map
-func (m *ReplicatedMap) GetValues(ctx context.Context) ([]interface{}, error) {
+func (m *ReplicatedMap) GetValues(ctx context.Context) (*iproxy.LazyValueListDecoder, error) {
 	request := codec.EncodeReplicatedMapValuesRequest(m.name)
-	if response, err := m.invokeOnPartition(ctx, request, m.partitionID); err != nil {
-		return nil, err
-	} else {
-		valueDatas := codec.DecodeReplicatedMapValuesResponse(response)
-		values := make([]interface{}, len(valueDatas))
-		for i, valueData := range valueDatas {
-			if value, err := m.convertToObject(valueData); err != nil {
-				return nil, err
-			} else {
-				values[i] = value
-			}
-		}
-		return values, nil
-	}
+	return m.invokePartitionMakeValueDecoder(ctx, request, m.partitionID, codec.DecodeReplicatedMapValuesResponse)
 }
 
 // IsEmpty returns true if this map contains no key-value mappings.
