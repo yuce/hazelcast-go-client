@@ -44,7 +44,7 @@ type Config struct {
 func NewConfig() Config {
 	return Config{
 		Name:              "dev",
-		Addrs:             []string{"127.0.0.1:5701"},
+		Addrs:             []string{"localhost:5701"},
 		SmartRouting:      true,
 		ConnectionTimeout: 5 * time.Second,
 		HeartbeatInterval: 5 * time.Second,
