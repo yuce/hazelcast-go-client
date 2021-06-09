@@ -217,12 +217,7 @@ func (l *List) IsEmpty(ctx context.Context) (bool, error) {
 // Iterator returns a lazy decoder with the items in this list.
 func (l *List) Iterator(ctx context.Context) (*iproxy.LazyValueListDecoder, error) {
 	request := codec.EncodeListIteratorRequest(l.name)
-	if resp, err := l.invokeOnPartition(ctx, request, l.partitionID); err != nil {
-		return nil, err
-	} else {
-		items := codec.DecodeListIteratorResponse(resp)
-		return iproxy.NewLazyValueListDecoder(items, l.serializationService), nil
-	}
+	return l.invokePartitionMakeValueDecoder(ctx, request, l.partitionID, codec.DecodeListIteratorResponse)
 }
 
 // LastIndexOf returns the index of the last occurrence of the given element in this list.
@@ -247,12 +242,7 @@ func (l *List) ListIterator(ctx context.Context, index int) (*iproxy.LazyValueLi
 		return nil, err
 	}
 	request := codec.EncodeListListIteratorRequest(l.name, indexI32)
-	if resp, err := l.invokeOnPartition(ctx, request, l.partitionID); err != nil {
-		return nil, err
-	} else {
-		items := codec.DecodeListIteratorResponse(resp)
-		return iproxy.NewLazyValueListDecoder(items, l.serializationService), nil
-	}
+	return l.invokePartitionMakeValueDecoder(ctx, request, l.partitionID, codec.DecodeListIteratorResponse)
 }
 
 // Remove removes the given element from this list.
@@ -357,7 +347,7 @@ func (l *List) Size(ctx context.Context) (int, error) {
 
 // SubList returns a view of this list that contains elements between index numbers
 // from start (inclusive) to end (exclusive).
-func (l *List) SubList(ctx context.Context, start int, end int) ([]interface{}, error) {
+func (l *List) SubList(ctx context.Context, start int, end int) (*iproxy.LazyValueListDecoder, error) {
 	startAsInt32, err := validationutil.ValidateAsNonNegativeInt32(start)
 	if err != nil {
 		return nil, err
@@ -367,21 +357,13 @@ func (l *List) SubList(ctx context.Context, start int, end int) ([]interface{}, 
 		return nil, err
 	}
 	request := codec.EncodeListSubRequest(l.name, startAsInt32, endAsInt32)
-	response, err := l.invokeOnPartition(ctx, request, l.partitionID)
-	if err != nil {
-		return nil, err
-	}
-	return l.convertToObjects(codec.DecodeListSubResponse(response))
+	return l.invokePartitionMakeValueDecoder(ctx, request, l.partitionID, codec.DecodeListSubResponse)
 }
 
 // GetAll returns a slice that contains all elements of this list in proper sequence.
-func (l *List) GetAll(ctx context.Context) ([]interface{}, error) {
+func (l *List) GetAll(ctx context.Context) (*iproxy.LazyValueListDecoder, error) {
 	request := codec.EncodeListGetAllRequest(l.name)
-	response, err := l.invokeOnPartition(ctx, request, l.partitionID)
-	if err != nil {
-		return nil, err
-	}
-	return l.convertToObjects(codec.DecodeListGetAllResponse(response))
+	return l.invokePartitionMakeValueDecoder(ctx, request, l.partitionID, codec.DecodeListGetAllResponse)
 }
 
 func (l *List) addListener(ctx context.Context, includeValue bool, handler ListItemNotifiedHandler) (types.UUID, error) {
