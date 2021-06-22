@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package internal
+package aggregate
 
-const (
-	// ClientType is used in the Management
-	ClientType         = "GOO"
-	AggregateFactoryID = -29
+import (
+	"fmt"
+
+	"github.com/hazelcast/hazelcast-go-client/serialization"
 )
 
-// ClientVersion is the build time version
-// TODO: This should be replace with a build time version variable, BuildInfo etc.
-var ClientVersion = "1.0.0"
+type Aggregator interface {
+	serialization.IdentifiedDataSerializable
+	fmt.Stringer
+}
