@@ -19,6 +19,7 @@ package invocation
 import (
 	"fmt"
 
+	"github.com/hazelcast/hazelcast-go-client/internal/event"
 	ilogger "github.com/hazelcast/hazelcast-go-client/internal/logger"
 	"github.com/hazelcast/hazelcast-go-client/internal/proto"
 )
@@ -32,21 +33,24 @@ type Service struct {
 	urgentRequestCh <-chan Invocation
 	responseCh      <-chan *proto.ClientMessage
 	// removeCh carries correlationIDs to be removed
-	removeCh    <-chan int64
+	removeCh    chan int64
 	doneCh      chan struct{}
 	invocations map[int64]Invocation
 	handler     Handler
 	logger      ilogger.Logger
+	dispatch    *event.DispatchService
 }
 
 func NewService(
+	dispatch *event.DispatchService,
 	requestCh <-chan Invocation,
 	urgentRequestCh <-chan Invocation,
 	responseCh <-chan *proto.ClientMessage,
-	removeCh <-chan int64,
+	removeCh chan int64,
 	handler Handler,
 	logger ilogger.Logger) *Service {
 	service := &Service{
+		dispatch:        dispatch,
 		requestCh:       requestCh,
 		urgentRequestCh: urgentRequestCh,
 		responseCh:      responseCh,
@@ -56,11 +60,13 @@ func NewService(
 		handler:         handler,
 		logger:          logger,
 	}
+	dispatch.Subscribe(EventInvocationLost, event.DefaultSubscriptionID, service.handleLostInvocations)
 	go service.processIncoming()
 	return service
 }
 
 func (s *Service) Stop() {
+	s.dispatch.Unsubscribe(EventInvocationLost, event.MakeSubscriptionID(s.handleLostInvocations))
 	close(s.doneCh)
 }
 
@@ -79,7 +85,9 @@ loop:
 		case msg := <-s.responseCh:
 			s.handleClientMessage(msg)
 		case id := <-s.removeCh:
-			s.removeCorrelationID(id)
+			if inv := s.unregisterInvocation(id); inv != nil {
+				inv.Close()
+			}
 		case <-s.doneCh:
 			break loop
 		}
@@ -162,4 +170,17 @@ func (s *Service) unregisterInvocation(correlationID int64) Invocation {
 		return invocation
 	}
 	return nil
+}
+
+func (s *Service) handleLostInvocations(event event.Event) {
+	e, ok := event.(InvocationLost)
+	if !ok {
+		return
+	}
+	s.logger.Trace(func() string {
+		return fmt.Sprintf("removing %d lost invocations", len(e.CorrelationIDs))
+	})
+	for _, cid := range e.CorrelationIDs {
+		s.removeCh <- cid
+	}
 }

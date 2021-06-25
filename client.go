@@ -448,7 +448,7 @@ func (c *Client) createComponents(config *Config, addrProvider icluster.AddressP
 		Logger:            c.logger,
 		Config:            &config.ClusterConfig,
 	})
-	invocationService := invocation.NewService(requestCh, urgentRequestCh, responseCh, removeCh, invocationHandler, c.logger)
+	invocationService := invocation.NewService(c.eventDispatcher, requestCh, urgentRequestCh, responseCh, removeCh, invocationHandler, c.logger)
 	listenerBinder := icluster.NewConnectionListenerBinder(
 		connectionManager,
 		invocationFactory,

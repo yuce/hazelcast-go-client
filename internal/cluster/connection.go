@@ -82,6 +82,11 @@ func (c *Connection) Endpoint() pubcluster.Address {
 	return c.endpoint.Load().(pubcluster.Address)
 }
 
+func (c *Connection) String() string {
+	return fmt.Sprintf("ClientConnection{isAlive=%t, connectionID=%d, endpoint=%s, lastReadTime=%s, lastWriteTime=%s, closedTime=%s, connected server version=%s",
+		c.isAlive(), c.connectionID, c.endpoint.Load(), c.lastRead.Load(), c.lastWrite.Load(), c.closedTime.Load(), c.connectedServerVersionStr)
+}
+
 func (c *Connection) start(clusterCfg *pubcluster.Config, addr pubcluster.Address) error {
 	if socket, err := c.createSocket(clusterCfg, addr); err != nil {
 		return err
@@ -264,6 +269,7 @@ func (c *Connection) close(closeErr error) {
 	c.socket.Close()
 	c.closedTime.Store(time.Now())
 	c.eventDispatcher.Publish(NewConnectionClosed(c, closeErr))
+	c.publishPendingInvocations()
 	c.logger.Trace(func() string {
 		reason := "normally"
 		if closeErr != nil {
@@ -273,9 +279,14 @@ func (c *Connection) close(closeErr error) {
 	})
 }
 
-func (c *Connection) String() string {
-	return fmt.Sprintf("ClientConnection{isAlive=%t, connectionID=%d, endpoint=%s, lastReadTime=%s, lastWriteTime=%s, closedTime=%s, connected server version=%s",
-		c.isAlive(), c.connectionID, c.endpoint.Load(), c.lastRead.Load(), c.lastWrite.Load(), c.closedTime.Load(), c.connectedServerVersionStr)
+func (c *Connection) publishPendingInvocations() {
+	var cids []int64
+	for inv := range c.pending {
+		cids = append(cids, inv.CorrelationID())
+	}
+	if len(cids) > 0 {
+		c.eventDispatcher.Publish(invocation.NewInvocationLost(cids))
+	}
 }
 
 func positiveDurationOrMax(duration time.Duration) time.Duration {
