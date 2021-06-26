@@ -280,13 +280,16 @@ func (c *Connection) close(closeErr error) {
 }
 
 func (c *Connection) publishPendingInvocations() {
-	var cids []int64
-	for inv := range c.pending {
-		cids = append(cids, inv.CorrelationID())
+	count := len(c.pending)
+	if count == 0 {
+		return
 	}
-	if len(cids) > 0 {
-		c.eventDispatcher.Publish(invocation.NewInvocationLost(cids))
+	cids := make([]int64, count)
+	for i := 0; i < count; i++ {
+		inv := <-c.pending
+		cids[i] = inv.CorrelationID()
 	}
+	c.eventDispatcher.Publish(invocation.NewInvocationLost(cids))
 }
 
 func positiveDurationOrMax(duration time.Duration) time.Duration {
