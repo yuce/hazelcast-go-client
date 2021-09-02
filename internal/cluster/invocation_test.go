@@ -21,6 +21,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hazelcast/hazelcast-go-client/proto"
+
 	"github.com/stretchr/testify/assert"
 
 	pubcluster "github.com/hazelcast/hazelcast-go-client/cluster"
@@ -28,7 +30,6 @@ import (
 	"github.com/hazelcast/hazelcast-go-client/internal/cb"
 	icluster "github.com/hazelcast/hazelcast-go-client/internal/cluster"
 	ihzerrors "github.com/hazelcast/hazelcast-go-client/internal/hzerrors"
-	"github.com/hazelcast/hazelcast-go-client/internal/proto"
 	"github.com/hazelcast/hazelcast-go-client/types"
 )
 

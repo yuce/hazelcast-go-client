@@ -20,9 +20,10 @@ import (
 	"context"
 	"fmt"
 
+	proto2 "github.com/hazelcast/hazelcast-go-client/proto"
+	codec2 "github.com/hazelcast/hazelcast-go-client/proto/codec"
+
 	"github.com/hazelcast/hazelcast-go-client/internal/cb"
-	"github.com/hazelcast/hazelcast-go-client/internal/proto"
-	"github.com/hazelcast/hazelcast-go-client/internal/proto/codec"
 	iproxy "github.com/hazelcast/hazelcast-go-client/internal/proxy"
 	iserialization "github.com/hazelcast/hazelcast-go-client/internal/serialization"
 	"github.com/hazelcast/hazelcast-go-client/predicate"
@@ -80,7 +81,7 @@ func (m *ReplicatedMap) AddEntryListenerToKeyWithPredicate(ctx context.Context, 
 
 // Clear deletes all entries one by one and fires related events
 func (m *ReplicatedMap) Clear(ctx context.Context) error {
-	request := codec.EncodeReplicatedMapClearRequest(m.name)
+	request := codec2.EncodeReplicatedMapClearRequest(m.name)
 	_, err := m.invokeOnRandomTarget(ctx, request, nil)
 	return err
 }
@@ -90,11 +91,11 @@ func (m *ReplicatedMap) ContainsKey(ctx context.Context, key interface{}) (bool,
 	if keyData, err := m.validateAndSerialize(key); err != nil {
 		return false, err
 	} else {
-		request := codec.EncodeReplicatedMapContainsKeyRequest(m.name, keyData)
+		request := codec2.EncodeReplicatedMapContainsKeyRequest(m.name, keyData)
 		if response, err := m.invokeOnKey(ctx, request, keyData); err != nil {
 			return false, err
 		} else {
-			return codec.DecodeReplicatedMapContainsKeyResponse(response), nil
+			return codec2.DecodeReplicatedMapContainsKeyResponse(response), nil
 		}
 	}
 }
@@ -104,11 +105,11 @@ func (m *ReplicatedMap) ContainsValue(ctx context.Context, value interface{}) (b
 	if valueData, err := m.validateAndSerialize(value); err != nil {
 		return false, err
 	} else {
-		request := codec.EncodeReplicatedMapContainsValueRequest(m.name, valueData)
+		request := codec2.EncodeReplicatedMapContainsValueRequest(m.name, valueData)
 		if response, err := m.invokeOnPartition(ctx, request, m.partitionID); err != nil {
 			return false, err
 		} else {
-			return codec.DecodeReplicatedMapContainsValueResponse(response), nil
+			return codec2.DecodeReplicatedMapContainsValueResponse(response), nil
 		}
 	}
 }
@@ -120,32 +121,32 @@ func (m *ReplicatedMap) Get(ctx context.Context, key interface{}) (interface{}, 
 	if keyData, err := m.validateAndSerialize(key); err != nil {
 		return nil, err
 	} else {
-		request := codec.EncodeReplicatedMapGetRequest(m.name, keyData)
+		request := codec2.EncodeReplicatedMapGetRequest(m.name, keyData)
 		if response, err := m.invokeOnKey(ctx, request, keyData); err != nil {
 			return nil, err
 		} else {
-			return m.convertToObject(codec.DecodeReplicatedMapGetResponse(response))
+			return m.convertToObject(codec2.DecodeReplicatedMapGetResponse(response))
 		}
 	}
 }
 
 // GetEntrySet returns a clone of the mappings contained in this map.
 func (m *ReplicatedMap) GetEntrySet(ctx context.Context) ([]types.Entry, error) {
-	request := codec.EncodeReplicatedMapEntrySetRequest(m.name)
+	request := codec2.EncodeReplicatedMapEntrySetRequest(m.name)
 	if response, err := m.invokeOnPartition(ctx, request, m.partitionID); err != nil {
 		return nil, err
 	} else {
-		return m.convertPairsToEntries(codec.DecodeReplicatedMapEntrySetResponse(response))
+		return m.convertPairsToEntries(codec2.DecodeReplicatedMapEntrySetResponse(response))
 	}
 }
 
 // GetKeySet returns keys contained in this map
 func (m *ReplicatedMap) GetKeySet(ctx context.Context) ([]interface{}, error) {
-	request := codec.EncodeReplicatedMapKeySetRequest(m.name)
+	request := codec2.EncodeReplicatedMapKeySetRequest(m.name)
 	if response, err := m.invokeOnPartition(ctx, request, m.partitionID); err != nil {
 		return nil, err
 	} else {
-		keyDatas := codec.DecodeReplicatedMapKeySetResponse(response)
+		keyDatas := codec2.DecodeReplicatedMapKeySetResponse(response)
 		keys := make([]interface{}, len(keyDatas))
 		for i, keyData := range keyDatas {
 			if key, err := m.convertToObject(keyData); err != nil {
@@ -160,11 +161,11 @@ func (m *ReplicatedMap) GetKeySet(ctx context.Context) ([]interface{}, error) {
 
 // GetValues returns a list clone of the values contained in this map
 func (m *ReplicatedMap) GetValues(ctx context.Context) ([]interface{}, error) {
-	request := codec.EncodeReplicatedMapValuesRequest(m.name)
+	request := codec2.EncodeReplicatedMapValuesRequest(m.name)
 	if response, err := m.invokeOnPartition(ctx, request, m.partitionID); err != nil {
 		return nil, err
 	} else {
-		valueDatas := codec.DecodeReplicatedMapValuesResponse(response)
+		valueDatas := codec2.DecodeReplicatedMapValuesResponse(response)
 		values := make([]interface{}, len(valueDatas))
 		for i, valueData := range valueDatas {
 			if value, err := m.convertToObject(valueData); err != nil {
@@ -179,11 +180,11 @@ func (m *ReplicatedMap) GetValues(ctx context.Context) ([]interface{}, error) {
 
 // IsEmpty returns true if this map contains no key-value mappings.
 func (m *ReplicatedMap) IsEmpty(ctx context.Context) (bool, error) {
-	request := codec.EncodeReplicatedMapIsEmptyRequest(m.name)
+	request := codec2.EncodeReplicatedMapIsEmptyRequest(m.name)
 	if response, err := m.invokeOnPartition(ctx, request, m.partitionID); err != nil {
 		return false, err
 	} else {
-		return codec.DecodeReplicatedMapIsEmptyResponse(response), nil
+		return codec2.DecodeReplicatedMapIsEmptyResponse(response), nil
 	}
 }
 
@@ -192,11 +193,11 @@ func (m *ReplicatedMap) Put(ctx context.Context, key interface{}, value interfac
 	if keyData, valueData, err := m.validateAndSerialize2(key, value); err != nil {
 		return nil, err
 	} else {
-		request := codec.EncodeReplicatedMapPutRequest(m.name, keyData, valueData, ttlUnlimited)
+		request := codec2.EncodeReplicatedMapPutRequest(m.name, keyData, valueData, ttlUnlimited)
 		if response, err := m.invokeOnKey(ctx, request, keyData); err != nil {
 			return nil, err
 		} else {
-			return m.convertToObject(codec.DecodeReplicatedMapPutResponse(response))
+			return m.convertToObject(codec2.DecodeReplicatedMapPutResponse(response))
 		}
 	}
 }
@@ -208,8 +209,8 @@ func (m *ReplicatedMap) PutAll(ctx context.Context, keyValuePairs ...types.Entry
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	f := func(partitionID int32, entries []proto.Pair) cb.Future {
-		request := codec.EncodeReplicatedMapPutAllRequest(m.name, entries)
+	f := func(partitionID int32, entries []proto2.Pair) cb.Future {
+		request := codec2.EncodeReplicatedMapPutAllRequest(m.name, entries)
 		return m.cb.TryContextFuture(ctx, func(ctx context.Context, attempt int) (interface{}, error) {
 			if attempt > 0 {
 				request = request.Copy()
@@ -229,11 +230,11 @@ func (m *ReplicatedMap) Remove(ctx context.Context, key interface{}) (interface{
 	if keyData, err := m.validateAndSerialize(key); err != nil {
 		return nil, err
 	} else {
-		request := codec.EncodeReplicatedMapRemoveRequest(m.name, keyData)
+		request := codec2.EncodeReplicatedMapRemoveRequest(m.name, keyData)
 		if response, err := m.invokeOnKey(ctx, request, keyData); err != nil {
 			return nil, err
 		} else {
-			return m.convertToObject(codec.DecodeReplicatedMapRemoveResponse(response))
+			return m.convertToObject(codec2.DecodeReplicatedMapRemoveResponse(response))
 		}
 	}
 }
@@ -245,11 +246,11 @@ func (m *ReplicatedMap) RemoveEntryListener(ctx context.Context, subscriptionID 
 
 // Size returns the number of entries in this map.
 func (m *ReplicatedMap) Size(ctx context.Context) (int, error) {
-	request := codec.EncodeReplicatedMapSizeRequest(m.name)
+	request := codec2.EncodeReplicatedMapSizeRequest(m.name)
 	if response, err := m.invokeOnPartition(ctx, request, m.partitionID); err != nil {
 		return 0, err
 	} else {
-		return int(codec.DecodeReplicatedMapSizeResponse(response)), nil
+		return int(codec2.DecodeReplicatedMapSizeResponse(response)), nil
 	}
 }
 
@@ -269,38 +270,38 @@ func (m *ReplicatedMap) addEntryListener(ctx context.Context, key interface{}, p
 	}
 	subscriptionID := types.NewUUID()
 	addRequest := m.makeListenerRequest(keyData, predicateData, m.smart)
-	removeRequest := codec.EncodeReplicatedMapRemoveEntryListenerRequest(m.name, subscriptionID)
-	listenerHandler := func(msg *proto.ClientMessage) {
+	removeRequest := codec2.EncodeReplicatedMapRemoveEntryListenerRequest(m.name, subscriptionID)
+	listenerHandler := func(msg *proto2.ClientMessage) {
 		m.makeListenerDecoder(msg, keyData, predicateData, m.makeEntryNotifiedListenerHandler(handler))
 	}
 	err = m.listenerBinder.Add(ctx, subscriptionID, addRequest, removeRequest, listenerHandler)
 	return subscriptionID, err
 }
 
-func (m *ReplicatedMap) makeListenerRequest(keyData, predicateData *iserialization.Data, smart bool) *proto.ClientMessage {
+func (m *ReplicatedMap) makeListenerRequest(keyData, predicateData *iserialization.Data, smart bool) *proto2.ClientMessage {
 	if keyData != nil {
 		if predicateData != nil {
-			return codec.EncodeReplicatedMapAddEntryListenerToKeyWithPredicateRequest(m.name, keyData, predicateData, smart)
+			return codec2.EncodeReplicatedMapAddEntryListenerToKeyWithPredicateRequest(m.name, keyData, predicateData, smart)
 		} else {
-			return codec.EncodeReplicatedMapAddEntryListenerToKeyRequest(m.name, keyData, smart)
+			return codec2.EncodeReplicatedMapAddEntryListenerToKeyRequest(m.name, keyData, smart)
 		}
 	} else if predicateData != nil {
-		return codec.EncodeReplicatedMapAddEntryListenerWithPredicateRequest(m.name, predicateData, smart)
+		return codec2.EncodeReplicatedMapAddEntryListenerWithPredicateRequest(m.name, predicateData, smart)
 	} else {
-		return codec.EncodeReplicatedMapAddEntryListenerRequest(m.name, smart)
+		return codec2.EncodeReplicatedMapAddEntryListenerRequest(m.name, smart)
 	}
 }
 
-func (m *ReplicatedMap) makeListenerDecoder(msg *proto.ClientMessage, keyData, predicateData *iserialization.Data, handler entryNotifiedHandler) {
+func (m *ReplicatedMap) makeListenerDecoder(msg *proto2.ClientMessage, keyData, predicateData *iserialization.Data, handler entryNotifiedHandler) {
 	if keyData != nil {
 		if predicateData != nil {
-			codec.HandleReplicatedMapAddEntryListenerToKeyWithPredicate(msg, handler)
+			codec2.HandleReplicatedMapAddEntryListenerToKeyWithPredicate(msg, handler)
 		} else {
-			codec.HandleReplicatedMapAddEntryListenerToKey(msg, handler)
+			codec2.HandleReplicatedMapAddEntryListenerToKey(msg, handler)
 		}
 	} else if predicateData != nil {
-		codec.HandleReplicatedMapAddEntryListenerWithPredicate(msg, handler)
+		codec2.HandleReplicatedMapAddEntryListenerWithPredicate(msg, handler)
 	} else {
-		codec.HandleReplicatedMapAddEntryListener(msg, handler)
+		codec2.HandleReplicatedMapAddEntryListener(msg, handler)
 	}
 }

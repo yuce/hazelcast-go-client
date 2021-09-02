@@ -20,9 +20,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	proto2 "github.com/hazelcast/hazelcast-go-client/proto"
+
 	pubcluster "github.com/hazelcast/hazelcast-go-client/cluster"
 	"github.com/hazelcast/hazelcast-go-client/internal/invocation"
-	"github.com/hazelcast/hazelcast-go-client/internal/proto"
 )
 
 type ConnectionInvocationFactory struct {
@@ -38,25 +39,25 @@ func NewConnectionInvocationFactory(config *pubcluster.Config) *ConnectionInvoca
 	}
 }
 
-func (f *ConnectionInvocationFactory) NewInvocationOnPartitionOwner(message *proto.ClientMessage, partitionID int32) *invocation.Impl {
+func (f *ConnectionInvocationFactory) NewInvocationOnPartitionOwner(message *proto2.ClientMessage, partitionID int32) *invocation.Impl {
 	message.SetCorrelationID(f.makeCorrelationID())
 	return invocation.NewImpl(message, partitionID, "", time.Now().Add(f.invocationTimeout), f.redoOperation)
 }
 
-func (f *ConnectionInvocationFactory) NewInvocationOnRandomTarget(message *proto.ClientMessage, handler proto.ClientMessageHandler) *invocation.Impl {
+func (f *ConnectionInvocationFactory) NewInvocationOnRandomTarget(message *proto2.ClientMessage, handler proto2.ClientMessageHandler) *invocation.Impl {
 	message.SetCorrelationID(f.makeCorrelationID())
 	inv := invocation.NewImpl(message, -1, "", time.Now().Add(f.invocationTimeout), f.redoOperation)
 	inv.SetEventHandler(handler)
 	return inv
 }
 
-func (f *ConnectionInvocationFactory) NewInvocationOnTarget(message *proto.ClientMessage, addr pubcluster.Address) *invocation.Impl {
+func (f *ConnectionInvocationFactory) NewInvocationOnTarget(message *proto2.ClientMessage, addr pubcluster.Address) *invocation.Impl {
 	message.SetCorrelationID(f.makeCorrelationID())
 	inv := invocation.NewImpl(message, -1, addr, time.Now().Add(f.invocationTimeout), f.redoOperation)
 	return inv
 }
 
-func (f *ConnectionInvocationFactory) NewConnectionBoundInvocation(message *proto.ClientMessage, conn *Connection, handler proto.ClientMessageHandler) *ConnectionBoundInvocation {
+func (f *ConnectionInvocationFactory) NewConnectionBoundInvocation(message *proto2.ClientMessage, conn *Connection, handler proto2.ClientMessageHandler) *ConnectionBoundInvocation {
 	message = message.Copy()
 	message.SetCorrelationID(f.makeCorrelationID())
 	inv := newConnectionBoundInvocation(message, -1, "", conn, time.Now().Add(f.invocationTimeout), f.redoOperation)
@@ -64,7 +65,7 @@ func (f *ConnectionInvocationFactory) NewConnectionBoundInvocation(message *prot
 	return inv
 }
 
-func (f *ConnectionInvocationFactory) NewMemberBoundInvocation(message *proto.ClientMessage, member *pubcluster.MemberInfo) *MemberBoundInvocation {
+func (f *ConnectionInvocationFactory) NewMemberBoundInvocation(message *proto2.ClientMessage, member *pubcluster.MemberInfo) *MemberBoundInvocation {
 	message = message.Copy()
 	message.SetCorrelationID(f.makeCorrelationID())
 	deadline := time.Now().Add(f.invocationTimeout)

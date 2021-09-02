@@ -20,8 +20,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/hazelcast/hazelcast-go-client/internal/proto"
-	"github.com/hazelcast/hazelcast-go-client/internal/proto/codec"
+	"github.com/hazelcast/hazelcast-go-client/proto"
+	codec2 "github.com/hazelcast/hazelcast-go-client/proto/codec"
+
 	iserialization "github.com/hazelcast/hazelcast-go-client/internal/serialization"
 	"github.com/hazelcast/hazelcast-go-client/types"
 )
@@ -62,7 +63,7 @@ func (t *Topic) Publish(ctx context.Context, message interface{}) error {
 	if messageData, err := t.validateAndSerialize(message); err != nil {
 		return err
 	} else {
-		request := codec.EncodeTopicPublishRequest(t.name, messageData)
+		request := codec2.EncodeTopicPublishRequest(t.name, messageData)
 		_, err := t.invokeOnPartition(ctx, request, t.partitionID)
 		return err
 	}
@@ -76,7 +77,7 @@ func (t *Topic) PublishAll(ctx context.Context, messages ...interface{}) error {
 	if messagesData, err := t.validateAndSerializeValues(messages); err != nil {
 		return err
 	} else {
-		request := codec.EncodeTopicPublishAllRequest(t.name, messagesData)
+		request := codec2.EncodeTopicPublishAllRequest(t.name, messagesData)
 		_, err := t.invokeOnPartition(ctx, request, t.partitionID)
 		return err
 	}
@@ -89,10 +90,10 @@ func (t *Topic) RemoveListener(ctx context.Context, subscriptionID types.UUID) e
 
 func (t *Topic) addListener(ctx context.Context, handler TopicMessageHandler) (types.UUID, error) {
 	subscriptionID := types.NewUUID()
-	addRequest := codec.EncodeTopicAddMessageListenerRequest(t.name, t.smart)
-	removeRequest := codec.EncodeTopicRemoveMessageListenerRequest(t.name, subscriptionID)
+	addRequest := codec2.EncodeTopicAddMessageListenerRequest(t.name, t.smart)
+	removeRequest := codec2.EncodeTopicRemoveMessageListenerRequest(t.name, subscriptionID)
 	listenerHandler := func(msg *proto.ClientMessage) {
-		codec.HandleTopicAddMessageListener(msg, func(itemData *iserialization.Data, publishTime int64, uuid types.UUID) {
+		codec2.HandleTopicAddMessageListener(msg, func(itemData *iserialization.Data, publishTime int64, uuid types.UUID) {
 			if item, err := t.convertToObject(itemData); err != nil {
 				t.logger.Warnf("cannot convert data to Go value")
 			} else {

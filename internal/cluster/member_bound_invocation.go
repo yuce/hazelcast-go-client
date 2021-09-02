@@ -20,12 +20,13 @@ import (
 	"errors"
 	"time"
 
+	"github.com/hazelcast/hazelcast-go-client/proto"
+
 	"github.com/hazelcast/hazelcast-go-client/hzerrors"
 
 	pubcluster "github.com/hazelcast/hazelcast-go-client/cluster"
 	"github.com/hazelcast/hazelcast-go-client/internal/cb"
 	"github.com/hazelcast/hazelcast-go-client/internal/invocation"
-	"github.com/hazelcast/hazelcast-go-client/internal/proto"
 	"github.com/hazelcast/hazelcast-go-client/types"
 )
 

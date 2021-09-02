@@ -22,10 +22,11 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/hazelcast/hazelcast-go-client/proto"
+
 	"github.com/hazelcast/hazelcast-go-client/hzerrors"
 	"github.com/hazelcast/hazelcast-go-client/internal/event"
 	ilogger "github.com/hazelcast/hazelcast-go-client/internal/logger"
-	"github.com/hazelcast/hazelcast-go-client/internal/proto"
 	iserialization "github.com/hazelcast/hazelcast-go-client/internal/serialization"
 	"github.com/hazelcast/hazelcast-go-client/internal/util/murmur"
 	"github.com/hazelcast/hazelcast-go-client/types"

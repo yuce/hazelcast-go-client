@@ -22,17 +22,18 @@ import (
 	"sync"
 	"sync/atomic"
 
+	proto2 "github.com/hazelcast/hazelcast-go-client/proto"
+
 	"github.com/hazelcast/hazelcast-go-client/internal/event"
 	"github.com/hazelcast/hazelcast-go-client/internal/invocation"
 	"github.com/hazelcast/hazelcast-go-client/internal/logger"
-	"github.com/hazelcast/hazelcast-go-client/internal/proto"
 	"github.com/hazelcast/hazelcast-go-client/types"
 )
 
 type listenerRegistration struct {
-	addRequest    *proto.ClientMessage
-	removeRequest *proto.ClientMessage
-	handler       proto.ClientMessageHandler
+	addRequest    *proto2.ClientMessage
+	removeRequest *proto2.ClientMessage
+	handler       proto2.ClientMessageHandler
 	id            types.UUID
 }
 
@@ -75,7 +76,7 @@ func NewConnectionListenerBinder(
 	return binder
 }
 
-func (b *ConnectionListenerBinder) Add(ctx context.Context, id types.UUID, add *proto.ClientMessage, remove *proto.ClientMessage, handler proto.ClientMessageHandler) error {
+func (b *ConnectionListenerBinder) Add(ctx context.Context, id types.UUID, add *proto2.ClientMessage, remove *proto2.ClientMessage, handler proto2.ClientMessageHandler) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -128,7 +129,7 @@ func (b *ConnectionListenerBinder) removeCorrelationIDs(regId types.UUID) {
 	}
 }
 
-func (b *ConnectionListenerBinder) sendAddListenerRequests(ctx context.Context, request *proto.ClientMessage, handler proto.ClientMessageHandler, conns ...*Connection) ([]int64, error) {
+func (b *ConnectionListenerBinder) sendAddListenerRequests(ctx context.Context, request *proto2.ClientMessage, handler proto2.ClientMessageHandler, conns ...*Connection) ([]int64, error) {
 	if len(conns) == 0 {
 		return nil, nil
 	}
@@ -160,8 +161,8 @@ func (b *ConnectionListenerBinder) sendAddListenerRequests(ctx context.Context, 
 
 func (b *ConnectionListenerBinder) sendAddListenerRequest(
 	ctx context.Context,
-	request *proto.ClientMessage,
-	handler proto.ClientMessageHandler,
+	request *proto2.ClientMessage,
+	handler proto2.ClientMessageHandler,
 	conn *Connection) (invocation.Invocation, int64, error) {
 	inv := b.invocationFactory.NewConnectionBoundInvocation(request, conn, handler)
 	correlationID := inv.Request().CorrelationID()
@@ -169,7 +170,7 @@ func (b *ConnectionListenerBinder) sendAddListenerRequest(
 	return inv, correlationID, err
 }
 
-func (b *ConnectionListenerBinder) sendRemoveListenerRequests(ctx context.Context, request *proto.ClientMessage, conns ...*Connection) error {
+func (b *ConnectionListenerBinder) sendRemoveListenerRequests(ctx context.Context, request *proto2.ClientMessage, conns ...*Connection) error {
 	if len(conns) == 0 {
 		return nil
 	}
@@ -197,7 +198,7 @@ func (b *ConnectionListenerBinder) sendRemoveListenerRequests(ctx context.Contex
 	return nil
 }
 
-func (b *ConnectionListenerBinder) sendRemoveListenerRequest(ctx context.Context, request *proto.ClientMessage, conn *Connection) (invocation.Invocation, error) {
+func (b *ConnectionListenerBinder) sendRemoveListenerRequest(ctx context.Context, request *proto2.ClientMessage, conn *Connection) (invocation.Invocation, error) {
 	b.logger.Trace(func() string {
 		return fmt.Sprintf("%d: removing listener", conn.connectionID)
 	})

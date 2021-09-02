@@ -19,8 +19,9 @@ package hazelcast
 import (
 	"context"
 
-	"github.com/hazelcast/hazelcast-go-client/internal/proto"
-	"github.com/hazelcast/hazelcast-go-client/internal/proto/codec"
+	"github.com/hazelcast/hazelcast-go-client/proto"
+	codec2 "github.com/hazelcast/hazelcast-go-client/proto/codec"
+
 	iserialization "github.com/hazelcast/hazelcast-go-client/internal/serialization"
 	"github.com/hazelcast/hazelcast-go-client/internal/util/validationutil"
 	"github.com/hazelcast/hazelcast-go-client/types"
@@ -57,12 +58,12 @@ func (l *List) Add(ctx context.Context, element interface{}) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	request := codec.EncodeListAddRequest(l.name, elementData)
+	request := codec2.EncodeListAddRequest(l.name, elementData)
 	response, err := l.invokeOnPartition(ctx, request, l.partitionID)
 	if err != nil {
 		return false, err
 	}
-	return codec.DecodeListAddResponse(response), nil
+	return codec2.DecodeListAddResponse(response), nil
 }
 
 // AddAt inserts the specified element at the specified index.
@@ -76,7 +77,7 @@ func (l *List) AddAt(ctx context.Context, index int, element interface{}) error 
 	if err != nil {
 		return err
 	}
-	request := codec.EncodeListAddWithIndexRequest(l.name, indexAsInt32, elementData)
+	request := codec2.EncodeListAddWithIndexRequest(l.name, indexAsInt32, elementData)
 	_, err = l.invokeOnPartition(ctx, request, l.partitionID)
 	return err
 }
@@ -91,12 +92,12 @@ func (l *List) AddAll(ctx context.Context, elements ...interface{}) (bool, error
 	if err != nil {
 		return false, err
 	}
-	request := codec.EncodeListAddAllRequest(l.name, elementsData)
+	request := codec2.EncodeListAddAllRequest(l.name, elementsData)
 	response, err := l.invokeOnPartition(ctx, request, l.partitionID)
 	if err != nil {
 		return false, err
 	}
-	return codec.DecodeListAddAllResponse(response), nil
+	return codec2.DecodeListAddAllResponse(response), nil
 }
 
 // AddAllAt inserts all elements in the specified slice at specified index, keeping the order of the slice.
@@ -114,12 +115,12 @@ func (l *List) AddAllAt(ctx context.Context, index int, elements ...interface{})
 	if err != nil {
 		return false, err
 	}
-	request := codec.EncodeListAddAllWithIndexRequest(l.name, indexAsInt32, elementsData)
+	request := codec2.EncodeListAddAllWithIndexRequest(l.name, indexAsInt32, elementsData)
 	response, err := l.invokeOnPartition(ctx, request, l.partitionID)
 	if err != nil {
 		return false, err
 	}
-	return codec.DecodeListAddAllWithIndexResponse(response), nil
+	return codec2.DecodeListAddAllWithIndexResponse(response), nil
 }
 
 // AddListener adds an item listener for this list.
@@ -132,7 +133,7 @@ func (l *List) AddListener(ctx context.Context, includeValue bool, handler ListI
 
 // Clear removes all elements from the list.
 func (l *List) Clear(ctx context.Context) error {
-	request := codec.EncodeListClearRequest(l.name)
+	request := codec2.EncodeListClearRequest(l.name)
 	_, err := l.invokeOnPartition(ctx, request, l.partitionID)
 	return err
 }
@@ -144,12 +145,12 @@ func (l *List) Contains(ctx context.Context, element interface{}) (bool, error) 
 	if err != nil {
 		return false, err
 	}
-	request := codec.EncodeListContainsRequest(l.name, elementData)
+	request := codec2.EncodeListContainsRequest(l.name, elementData)
 	response, err := l.invokeOnPartition(ctx, request, l.partitionID)
 	if err != nil {
 		return false, err
 	}
-	return codec.DecodeListContainsResponse(response), nil
+	return codec2.DecodeListContainsResponse(response), nil
 }
 
 // ContainsAll checks if the list contains all of the given elements.
@@ -162,12 +163,12 @@ func (l *List) ContainsAll(ctx context.Context, elements ...interface{}) (bool, 
 	if err != nil {
 		return false, err
 	}
-	request := codec.EncodeListContainsAllRequest(l.name, elementsData)
+	request := codec2.EncodeListContainsAllRequest(l.name, elementsData)
 	response, err := l.invokeOnPartition(ctx, request, l.partitionID)
 	if err != nil {
 		return false, err
 	}
-	return codec.DecodeListContainsAllResponse(response), nil
+	return codec2.DecodeListContainsAllResponse(response), nil
 }
 
 // Get retrieves the element at given index.
@@ -176,12 +177,12 @@ func (l *List) Get(ctx context.Context, index int) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	request := codec.EncodeListGetRequest(l.name, indexAsInt32)
+	request := codec2.EncodeListGetRequest(l.name, indexAsInt32)
 	response, err := l.invokeOnPartition(ctx, request, l.partitionID)
 	if err != nil {
 		return nil, err
 	}
-	return l.convertToObject(codec.DecodeListGetResponse(response))
+	return l.convertToObject(codec2.DecodeListGetResponse(response))
 }
 
 // IndexOf returns the index of the first occurrence of the given element in this list.
@@ -190,22 +191,22 @@ func (l *List) IndexOf(ctx context.Context, element interface{}) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	request := codec.EncodeListIndexOfRequest(l.name, elementData)
+	request := codec2.EncodeListIndexOfRequest(l.name, elementData)
 	response, err := l.invokeOnPartition(ctx, request, l.partitionID)
 	if err != nil {
 		return 0, err
 	}
-	return int(codec.DecodeListIndexOfResponse(response)), nil
+	return int(codec2.DecodeListIndexOfResponse(response)), nil
 }
 
 // IsEmpty return true if the list is empty, false otherwise.
 func (l *List) IsEmpty(ctx context.Context) (bool, error) {
-	request := codec.EncodeListIsEmptyRequest(l.name)
+	request := codec2.EncodeListIsEmptyRequest(l.name)
 	response, err := l.invokeOnPartition(ctx, request, l.partitionID)
 	if err != nil {
 		return false, err
 	}
-	return codec.DecodeListIsEmptyResponse(response), nil
+	return codec2.DecodeListIsEmptyResponse(response), nil
 }
 
 // LastIndexOf returns the index of the last occurrence of the given element in this list.
@@ -214,12 +215,12 @@ func (l *List) LastIndexOf(ctx context.Context, element interface{}) (int, error
 	if err != nil {
 		return 0, err
 	}
-	request := codec.EncodeListLastIndexOfRequest(l.name, elementData)
+	request := codec2.EncodeListLastIndexOfRequest(l.name, elementData)
 	response, err := l.invokeOnPartition(ctx, request, l.partitionID)
 	if err != nil {
 		return 0, err
 	}
-	return int(codec.DecodeListLastIndexOfResponse(response)), nil
+	return int(codec2.DecodeListLastIndexOfResponse(response)), nil
 }
 
 // Remove removes the given element from this list.
@@ -229,12 +230,12 @@ func (l *List) Remove(ctx context.Context, element interface{}) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	request := codec.EncodeListRemoveRequest(l.name, elementData)
+	request := codec2.EncodeListRemoveRequest(l.name, elementData)
 	response, err := l.invokeOnPartition(ctx, request, l.partitionID)
 	if err != nil {
 		return false, err
 	}
-	return codec.DecodeListRemoveResponse(response), nil
+	return codec2.DecodeListRemoveResponse(response), nil
 }
 
 // RemoveAt removes the element at the given index.
@@ -244,12 +245,12 @@ func (l *List) RemoveAt(ctx context.Context, index int) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	request := codec.EncodeListRemoveWithIndexRequest(l.name, indexAsInt32)
+	request := codec2.EncodeListRemoveWithIndexRequest(l.name, indexAsInt32)
 	response, err := l.invokeOnPartition(ctx, request, l.partitionID)
 	if err != nil {
 		return nil, err
 	}
-	return l.convertToObject(codec.DecodeListRemoveWithIndexResponse(response))
+	return l.convertToObject(codec2.DecodeListRemoveWithIndexResponse(response))
 }
 
 // RemoveAll removes the given elements from the list.
@@ -262,12 +263,12 @@ func (l *List) RemoveAll(ctx context.Context, elements ...interface{}) (bool, er
 	if err != nil {
 		return false, err
 	}
-	request := codec.EncodeListCompareAndRemoveAllRequest(l.name, elementsData)
+	request := codec2.EncodeListCompareAndRemoveAllRequest(l.name, elementsData)
 	response, err := l.invokeOnPartition(ctx, request, l.partitionID)
 	if err != nil {
 		return false, err
 	}
-	return codec.DecodeListCompareAndRemoveAllResponse(response), nil
+	return codec2.DecodeListCompareAndRemoveAllResponse(response), nil
 }
 
 // RemoveListener removes the item listener with the given subscription ID.
@@ -285,12 +286,12 @@ func (l *List) RetainAll(ctx context.Context, elements ...interface{}) (bool, er
 	if err != nil {
 		return false, err
 	}
-	request := codec.EncodeListCompareAndRetainAllRequest(l.name, elementsData)
+	request := codec2.EncodeListCompareAndRetainAllRequest(l.name, elementsData)
 	response, err := l.invokeOnPartition(ctx, request, l.partitionID)
 	if err != nil {
 		return false, err
 	}
-	return codec.DecodeListCompareAndRetainAllResponse(response), nil
+	return codec2.DecodeListCompareAndRetainAllResponse(response), nil
 }
 
 // Set replaces the element at the specified index in this list with the specified element.
@@ -304,22 +305,22 @@ func (l *List) Set(ctx context.Context, index int, element interface{}) (interfa
 	if err != nil {
 		return nil, err
 	}
-	request := codec.EncodeListSetRequest(l.name, indexAsInt32, elementData)
+	request := codec2.EncodeListSetRequest(l.name, indexAsInt32, elementData)
 	response, err := l.invokeOnPartition(ctx, request, l.partitionID)
 	if err != nil {
 		return nil, err
 	}
-	return l.convertToObject(codec.DecodeListSetResponse(response))
+	return l.convertToObject(codec2.DecodeListSetResponse(response))
 }
 
 // Size returns the number of elements in this list.
 func (l *List) Size(ctx context.Context) (int, error) {
-	request := codec.EncodeListSizeRequest(l.name)
+	request := codec2.EncodeListSizeRequest(l.name)
 	response, err := l.invokeOnPartition(ctx, request, l.partitionID)
 	if err != nil {
 		return 0, err
 	}
-	return int(codec.DecodeListSizeResponse(response)), nil
+	return int(codec2.DecodeListSizeResponse(response)), nil
 }
 
 // SubList returns a view of this list that contains elements between index numbers
@@ -333,30 +334,30 @@ func (l *List) SubList(ctx context.Context, start int, end int) ([]interface{}, 
 	if err != nil {
 		return nil, err
 	}
-	request := codec.EncodeListSubRequest(l.name, startAsInt32, endAsInt32)
+	request := codec2.EncodeListSubRequest(l.name, startAsInt32, endAsInt32)
 	response, err := l.invokeOnPartition(ctx, request, l.partitionID)
 	if err != nil {
 		return nil, err
 	}
-	return l.convertToObjects(codec.DecodeListSubResponse(response))
+	return l.convertToObjects(codec2.DecodeListSubResponse(response))
 }
 
 // GetAll returns a slice that contains all elements of this list in proper sequence.
 func (l *List) GetAll(ctx context.Context) ([]interface{}, error) {
-	request := codec.EncodeListGetAllRequest(l.name)
+	request := codec2.EncodeListGetAllRequest(l.name)
 	response, err := l.invokeOnPartition(ctx, request, l.partitionID)
 	if err != nil {
 		return nil, err
 	}
-	return l.convertToObjects(codec.DecodeListGetAllResponse(response))
+	return l.convertToObjects(codec2.DecodeListGetAllResponse(response))
 }
 
 func (l *List) addListener(ctx context.Context, includeValue bool, handler ListItemNotifiedHandler) (types.UUID, error) {
 	subscriptionID := types.NewUUID()
-	addRequest := codec.EncodeListAddListenerRequest(l.name, includeValue, l.smart)
-	removeRequest := codec.EncodeListRemoveListenerRequest(l.name, subscriptionID)
+	addRequest := codec2.EncodeListAddListenerRequest(l.name, includeValue, l.smart)
+	removeRequest := codec2.EncodeListRemoveListenerRequest(l.name, subscriptionID)
 	listenerHandler := func(msg *proto.ClientMessage) {
-		codec.HandleListAddListener(msg, func(itemData *iserialization.Data, uuid types.UUID, eventType int32) {
+		codec2.HandleListAddListener(msg, func(itemData *iserialization.Data, uuid types.UUID, eventType int32) {
 			item, err := l.convertToObject(itemData)
 			if err != nil {
 				l.logger.Warnf("cannot convert data to Go value: %v", err)

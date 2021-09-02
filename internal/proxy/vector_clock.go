@@ -17,7 +17,7 @@
 package proxy
 
 import (
-	"github.com/hazelcast/hazelcast-go-client/internal/proto"
+	"github.com/hazelcast/hazelcast-go-client/proto"
 	"github.com/hazelcast/hazelcast-go-client/types"
 )
 

@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"encoding/binary"
 
-	"github.com/hazelcast/hazelcast-go-client/internal/proto"
+	"github.com/hazelcast/hazelcast-go-client/proto"
 )
 
 const messageBufferSize = 128 * 1024

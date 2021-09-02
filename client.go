@@ -31,11 +31,11 @@ import (
 	"github.com/hazelcast/hazelcast-go-client/internal/event"
 	"github.com/hazelcast/hazelcast-go-client/internal/invocation"
 	ilogger "github.com/hazelcast/hazelcast-go-client/internal/logger"
-	"github.com/hazelcast/hazelcast-go-client/internal/proto"
-	"github.com/hazelcast/hazelcast-go-client/internal/proto/codec"
 	iproxy "github.com/hazelcast/hazelcast-go-client/internal/proxy"
 	"github.com/hazelcast/hazelcast-go-client/internal/serialization"
 	"github.com/hazelcast/hazelcast-go-client/internal/stats"
+	"github.com/hazelcast/hazelcast-go-client/proto"
+	"github.com/hazelcast/hazelcast-go-client/proto/codec"
 	"github.com/hazelcast/hazelcast-go-client/types"
 )
 
@@ -338,6 +338,13 @@ func (c *Client) RemoveDistributedObjectListener(ctx context.Context, subscripti
 		return hzerrors.ErrClientNotActive
 	}
 	return c.proxyManager.removeDistributedObjectEventListener(ctx, subscriptionID)
+}
+
+// InternalGateway returns a value which can be used to send and receive client messages.
+// WARNING: This API is experimental and intended for internal use.
+// It may be changed or removed anytime without notice.
+func (c *Client) InternalGateway() *InternalGateway {
+	return c.proxyManager.internalGateway()
 }
 
 func (c *Client) addLifecycleListener(subscriptionID int64, handler LifecycleStateChangeHandler) {

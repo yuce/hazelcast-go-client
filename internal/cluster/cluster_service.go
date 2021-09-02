@@ -21,12 +21,13 @@ import (
 	"fmt"
 	"sync"
 
+	proto2 "github.com/hazelcast/hazelcast-go-client/proto"
+	"github.com/hazelcast/hazelcast-go-client/proto/codec"
+
 	pubcluster "github.com/hazelcast/hazelcast-go-client/cluster"
 	"github.com/hazelcast/hazelcast-go-client/internal/event"
 	"github.com/hazelcast/hazelcast-go-client/internal/invocation"
 	ilogger "github.com/hazelcast/hazelcast-go-client/internal/logger"
-	"github.com/hazelcast/hazelcast-go-client/internal/proto"
-	"github.com/hazelcast/hazelcast-go-client/internal/proto/codec"
 	"github.com/hazelcast/hazelcast-go-client/types"
 )
 
@@ -135,10 +136,10 @@ func (s *Service) handleMembersUpdated(conn *Connection, version int32, memberIn
 func (s *Service) sendMemberListViewRequest(ctx context.Context, conn *Connection) error {
 	s.logger.Trace(func() string { return "cluster.Service.sendMemberListViewRequest" })
 	request := codec.EncodeClientAddClusterViewListenerRequest()
-	inv := s.invocationFactory.NewConnectionBoundInvocation(request, conn, func(response *proto.ClientMessage) {
+	inv := s.invocationFactory.NewConnectionBoundInvocation(request, conn, func(response *proto2.ClientMessage) {
 		codec.HandleClientAddClusterViewListener(response, func(version int32, memberInfos []pubcluster.MemberInfo) {
 			s.handleMembersUpdated(conn, version, memberInfos)
-		}, func(version int32, partitions []proto.Pair) {
+		}, func(version int32, partitions []proto2.Pair) {
 			s.partitionService.Update(conn.connectionID, partitions, version)
 		})
 	})

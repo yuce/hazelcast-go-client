@@ -22,11 +22,12 @@ import (
 	"strings"
 	"time"
 
+	proto2 "github.com/hazelcast/hazelcast-go-client/proto"
+	codec2 "github.com/hazelcast/hazelcast-go-client/proto/codec"
+
 	"github.com/hazelcast/hazelcast-go-client/aggregate"
 	"github.com/hazelcast/hazelcast-go-client/internal/cb"
 	ihzerrors "github.com/hazelcast/hazelcast-go-client/internal/hzerrors"
-	"github.com/hazelcast/hazelcast-go-client/internal/proto"
-	"github.com/hazelcast/hazelcast-go-client/internal/proto/codec"
 	iproxy "github.com/hazelcast/hazelcast-go-client/internal/proxy"
 	"github.com/hazelcast/hazelcast-go-client/internal/serialization"
 	"github.com/hazelcast/hazelcast-go-client/predicate"
@@ -145,11 +146,11 @@ func (m *Map) AddInterceptor(ctx context.Context, interceptor interface{}) (stri
 	if interceptorData, err := m.proxy.convertToData(interceptor); err != nil {
 		return "", err
 	} else {
-		request := codec.EncodeMapAddInterceptorRequest(m.name, interceptorData)
+		request := codec2.EncodeMapAddInterceptorRequest(m.name, interceptorData)
 		if response, err := m.invokeOnRandomTarget(ctx, request, nil); err != nil {
 			return "", err
 		} else {
-			return codec.DecodeMapAddInterceptorResponse(response), nil
+			return codec2.DecodeMapAddInterceptorResponse(response), nil
 		}
 	}
 }
@@ -160,8 +161,8 @@ func (m *Map) Aggregate(ctx context.Context, agg aggregate.Aggregator) (interfac
 	if err != nil {
 		return nil, err
 	}
-	request := codec.EncodeMapAggregateRequest(m.name, aggData)
-	return m.aggregate(ctx, request, codec.DecodeMapAggregateResponse)
+	request := codec2.EncodeMapAggregateRequest(m.name, aggData)
+	return m.aggregate(ctx, request, codec2.DecodeMapAggregateResponse)
 }
 
 // AggregateWithPredicate runs the given aggregator and returns the result.
@@ -175,13 +176,13 @@ func (m *Map) AggregateWithPredicate(ctx context.Context, agg aggregate.Aggregat
 	if err != nil {
 		return nil, err
 	}
-	request := codec.EncodeMapAggregateWithPredicateRequest(m.name, aggData, predData)
-	return m.aggregate(ctx, request, codec.DecodeMapAggregateWithPredicateResponse)
+	request := codec2.EncodeMapAggregateWithPredicateRequest(m.name, aggData, predData)
+	return m.aggregate(ctx, request, codec2.DecodeMapAggregateWithPredicateResponse)
 }
 
 // Clear deletes all entries one by one and fires related events
 func (m *Map) Clear(ctx context.Context) error {
-	request := codec.EncodeMapClearRequest(m.name)
+	request := codec2.EncodeMapClearRequest(m.name)
 	_, err := m.invokeOnRandomTarget(ctx, request, nil)
 	return err
 }
@@ -192,11 +193,11 @@ func (m *Map) ContainsKey(ctx context.Context, key interface{}) (bool, error) {
 	if keyData, err := m.validateAndSerialize(key); err != nil {
 		return false, err
 	} else {
-		request := codec.EncodeMapContainsKeyRequest(m.name, keyData, lid)
+		request := codec2.EncodeMapContainsKeyRequest(m.name, keyData, lid)
 		if response, err := m.invokeOnKey(ctx, request, keyData); err != nil {
 			return false, err
 		} else {
-			return codec.DecodeMapContainsKeyResponse(response), nil
+			return codec2.DecodeMapContainsKeyResponse(response), nil
 		}
 	}
 }
@@ -206,11 +207,11 @@ func (m *Map) ContainsValue(ctx context.Context, value interface{}) (bool, error
 	if valueData, err := m.validateAndSerialize(value); err != nil {
 		return false, err
 	} else {
-		request := codec.EncodeMapContainsValueRequest(m.name, valueData)
+		request := codec2.EncodeMapContainsValueRequest(m.name, valueData)
 		if response, err := m.invokeOnRandomTarget(ctx, request, nil); err != nil {
 			return false, err
 		} else {
-			return codec.DecodeMapContainsValueResponse(response), nil
+			return codec2.DecodeMapContainsValueResponse(response), nil
 		}
 	}
 }
@@ -224,7 +225,7 @@ func (m *Map) Delete(ctx context.Context, key interface{}) error {
 	if keyData, err := m.validateAndSerialize(key); err != nil {
 		return err
 	} else {
-		request := codec.EncodeMapDeleteRequest(m.name, keyData, lid)
+		request := codec2.EncodeMapDeleteRequest(m.name, keyData, lid)
 		_, err := m.invokeOnKey(ctx, request, keyData)
 		return err
 	}
@@ -237,18 +238,18 @@ func (m *Map) Evict(ctx context.Context, key interface{}) (bool, error) {
 	if keyData, err := m.validateAndSerialize(key); err != nil {
 		return false, err
 	} else {
-		request := codec.EncodeMapEvictRequest(m.name, keyData, lid)
+		request := codec2.EncodeMapEvictRequest(m.name, keyData, lid)
 		if response, err := m.invokeOnKey(ctx, request, keyData); err != nil {
 			return false, err
 		} else {
-			return codec.DecodeMapEvictResponse(response), nil
+			return codec2.DecodeMapEvictResponse(response), nil
 		}
 	}
 }
 
 // EvictAll deletes all entries without firing releated events
 func (m *Map) EvictAll(ctx context.Context) error {
-	request := codec.EncodeMapEvictAllRequest(m.name)
+	request := codec2.EncodeMapEvictAllRequest(m.name)
 	_, err := m.invokeOnRandomTarget(ctx, request, nil)
 	return err
 }
@@ -258,11 +259,11 @@ func (m *Map) ExecuteOnEntries(ctx context.Context, entryProcessor interface{}) 
 	if processorData, err := m.validateAndSerialize(entryProcessor); err != nil {
 		return nil, err
 	} else {
-		request := codec.EncodeMapExecuteOnAllKeysRequest(m.name, processorData)
+		request := codec2.EncodeMapExecuteOnAllKeysRequest(m.name, processorData)
 		if resp, err := m.invokeOnRandomTarget(ctx, request, nil); err != nil {
 			return nil, err
 		} else {
-			pairs := codec.DecodeMapExecuteOnAllKeysResponse(resp)
+			pairs := codec2.DecodeMapExecuteOnAllKeysResponse(resp)
 			if kvPairs, err := m.convertPairsToEntries(pairs); err != nil {
 				return nil, err
 			} else {
@@ -274,7 +275,7 @@ func (m *Map) ExecuteOnEntries(ctx context.Context, entryProcessor interface{}) 
 
 // Flush flushes all the local dirty entries.
 func (m *Map) Flush(ctx context.Context) error {
-	request := codec.EncodeMapFlushRequest(m.name)
+	request := codec2.EncodeMapFlushRequest(m.name)
 	_, err := m.invokeOnRandomTarget(ctx, request, nil)
 	return err
 }
@@ -286,7 +287,7 @@ func (m *Map) ForceUnlock(ctx context.Context, key interface{}) error {
 		return err
 	} else {
 		refID := m.refIDGen.NextID()
-		request := codec.EncodeMapForceUnlockRequest(m.name, keyData, refID)
+		request := codec2.EncodeMapForceUnlockRequest(m.name, keyData, refID)
 		_, err = m.invokeOnKey(ctx, request, keyData)
 		return err
 	}
@@ -301,11 +302,11 @@ func (m *Map) Get(ctx context.Context, key interface{}) (interface{}, error) {
 	if keyData, err := m.validateAndSerialize(key); err != nil {
 		return nil, err
 	} else {
-		request := codec.EncodeMapGetRequest(m.name, keyData, lid)
+		request := codec2.EncodeMapGetRequest(m.name, keyData, lid)
 		if response, err := m.invokeOnKey(ctx, request, keyData); err != nil {
 			return nil, err
 		} else {
-			return m.convertToObject(codec.DecodeMapGetResponse(response))
+			return m.convertToObject(codec2.DecodeMapGetResponse(response))
 		}
 	}
 }
@@ -335,7 +336,7 @@ func (m *Map) GetAll(ctx context.Context, keys ...interface{}) ([]types.Entry, e
 	result := make([]types.Entry, 0, len(keys))
 	// create futures
 	f := func(partitionID int32, keys []*serialization.Data) cb.Future {
-		request := codec.EncodeMapGetAllRequest(m.name, keys)
+		request := codec2.EncodeMapGetAllRequest(m.name, keys)
 		return m.cb.TryContextFuture(ctx, func(ctx context.Context, attempt int) (interface{}, error) {
 			if attempt > 0 {
 				request = request.Copy()
@@ -351,7 +352,7 @@ func (m *Map) GetAll(ctx context.Context, keys ...interface{}) ([]types.Entry, e
 		if futureResult, err := future.Result(); err != nil {
 			return nil, err
 		} else {
-			pairs := codec.DecodeMapGetAllResponse(futureResult.(*proto.ClientMessage))
+			pairs := codec2.DecodeMapGetAllResponse(futureResult.(*proto2.ClientMessage))
 			var key, value interface{}
 			var err error
 			for _, pair := range pairs {
@@ -369,11 +370,11 @@ func (m *Map) GetAll(ctx context.Context, keys ...interface{}) ([]types.Entry, e
 
 // GetEntrySet returns a clone of the mappings contained in this map.
 func (m *Map) GetEntrySet(ctx context.Context) ([]types.Entry, error) {
-	request := codec.EncodeMapEntrySetRequest(m.name)
+	request := codec2.EncodeMapEntrySetRequest(m.name)
 	if response, err := m.invokeOnRandomTarget(ctx, request, nil); err != nil {
 		return nil, err
 	} else {
-		return m.convertPairsToEntries(codec.DecodeMapEntrySetResponse(response))
+		return m.convertPairsToEntries(codec2.DecodeMapEntrySetResponse(response))
 	}
 }
 
@@ -382,11 +383,11 @@ func (m *Map) GetEntrySetWithPredicate(ctx context.Context, predicate predicate.
 	if predData, err := m.validateAndSerialize(predicate); err != nil {
 		return nil, err
 	} else {
-		request := codec.EncodeMapEntriesWithPredicateRequest(m.name, predData)
+		request := codec2.EncodeMapEntriesWithPredicateRequest(m.name, predData)
 		if response, err := m.invokeOnRandomTarget(ctx, request, nil); err != nil {
 			return nil, err
 		} else {
-			return m.convertPairsToEntries(codec.DecodeMapEntriesWithPredicateResponse(response))
+			return m.convertPairsToEntries(codec2.DecodeMapEntriesWithPredicateResponse(response))
 		}
 	}
 }
@@ -398,11 +399,11 @@ func (m *Map) GetEntryView(ctx context.Context, key interface{}) (*types.SimpleE
 	if keyData, err := m.validateAndSerialize(key); err != nil {
 		return nil, err
 	} else {
-		request := codec.EncodeMapGetEntryViewRequest(m.name, keyData, lid)
+		request := codec2.EncodeMapGetEntryViewRequest(m.name, keyData, lid)
 		if response, err := m.invokeOnKey(ctx, request, keyData); err != nil {
 			return nil, err
 		} else {
-			ev, maxIdle := codec.DecodeMapGetEntryViewResponse(response)
+			ev, maxIdle := codec2.DecodeMapGetEntryViewResponse(response)
 			if ev == nil {
 				return nil, nil
 			}
@@ -435,11 +436,11 @@ func (m *Map) GetEntryView(ctx context.Context, key interface{}) (*types.SimpleE
 
 // GetKeySet returns keys contained in this map
 func (m *Map) GetKeySet(ctx context.Context) ([]interface{}, error) {
-	request := codec.EncodeMapKeySetRequest(m.name)
+	request := codec2.EncodeMapKeySetRequest(m.name)
 	if response, err := m.invokeOnRandomTarget(ctx, request, nil); err != nil {
 		return nil, err
 	} else {
-		keyDatas := codec.DecodeMapKeySetResponse(response)
+		keyDatas := codec2.DecodeMapKeySetResponse(response)
 		keys := make([]interface{}, len(keyDatas))
 		for i, keyData := range keyDatas {
 			if key, err := m.convertToObject(keyData); err != nil {
@@ -457,22 +458,22 @@ func (m *Map) GetKeySetWithPredicate(ctx context.Context, predicate predicate.Pr
 	if predicateData, err := m.validateAndSerializePredicate(predicate); err != nil {
 		return nil, err
 	} else {
-		request := codec.EncodeMapKeySetWithPredicateRequest(m.name, predicateData)
+		request := codec2.EncodeMapKeySetWithPredicateRequest(m.name, predicateData)
 		if response, err := m.invokeOnRandomTarget(ctx, request, nil); err != nil {
 			return nil, err
 		} else {
-			return m.convertToObjects(codec.DecodeMapKeySetWithPredicateResponse(response))
+			return m.convertToObjects(codec2.DecodeMapKeySetWithPredicateResponse(response))
 		}
 	}
 }
 
 // GetValues returns a list clone of the values contained in this map
 func (m *Map) GetValues(ctx context.Context) ([]interface{}, error) {
-	request := codec.EncodeMapValuesRequest(m.name)
+	request := codec2.EncodeMapValuesRequest(m.name)
 	if response, err := m.invokeOnRandomTarget(ctx, request, nil); err != nil {
 		return nil, err
 	} else {
-		return m.convertToObjects(codec.DecodeMapValuesResponse(response))
+		return m.convertToObjects(codec2.DecodeMapValuesResponse(response))
 	}
 }
 
@@ -481,22 +482,22 @@ func (m *Map) GetValuesWithPredicate(ctx context.Context, predicate predicate.Pr
 	if predicateData, err := m.validateAndSerializePredicate(predicate); err != nil {
 		return nil, err
 	} else {
-		request := codec.EncodeMapValuesWithPredicateRequest(m.name, predicateData)
+		request := codec2.EncodeMapValuesWithPredicateRequest(m.name, predicateData)
 		if response, err := m.invokeOnRandomTarget(ctx, request, nil); err != nil {
 			return nil, err
 		} else {
-			return m.convertToObjects(codec.DecodeMapValuesWithPredicateResponse(response))
+			return m.convertToObjects(codec2.DecodeMapValuesWithPredicateResponse(response))
 		}
 	}
 }
 
 // IsEmpty returns true if this map contains no key-value mappings.
 func (m *Map) IsEmpty(ctx context.Context) (bool, error) {
-	request := codec.EncodeMapIsEmptyRequest(m.name)
+	request := codec2.EncodeMapIsEmptyRequest(m.name)
 	if response, err := m.invokeOnRandomTarget(ctx, request, nil); err != nil {
 		return false, err
 	} else {
-		return codec.DecodeMapIsEmptyResponse(response), nil
+		return codec2.DecodeMapIsEmptyResponse(response), nil
 	}
 }
 
@@ -505,11 +506,11 @@ func (m *Map) IsLocked(ctx context.Context, key interface{}) (bool, error) {
 	if keyData, err := m.validateAndSerialize(key); err != nil {
 		return false, err
 	} else {
-		request := codec.EncodeMapIsLockedRequest(m.name, keyData)
+		request := codec2.EncodeMapIsLockedRequest(m.name, keyData)
 		if response, err := m.invokeOnKey(ctx, request, keyData); err != nil {
 			return false, err
 		} else {
-			return codec.DecodeMapIsLockedResponse(response), nil
+			return codec2.DecodeMapIsLockedResponse(response), nil
 		}
 	}
 }
@@ -590,8 +591,8 @@ func (m *Map) PutAll(ctx context.Context, entries ...types.Entry) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	f := func(partitionID int32, entries []proto.Pair) cb.Future {
-		request := codec.EncodeMapPutAllRequest(m.name, entries, true)
+	f := func(partitionID int32, entries []proto2.Pair) cb.Future {
+		request := codec2.EncodeMapPutAllRequest(m.name, entries, true)
 		return m.cb.TryContextFuture(ctx, func(ctx context.Context, attempt int) (interface{}, error) {
 			if attempt > 0 {
 				request = request.Copy()
@@ -625,11 +626,11 @@ func (m *Map) PutIfAbsentWithTTLAndMaxIdle(ctx context.Context, key interface{},
 	if keyData, valueData, err := m.validateAndSerialize2(key, value); err != nil {
 		return nil, err
 	} else {
-		request := codec.EncodeMapPutIfAbsentWithMaxIdleRequest(m.name, keyData, valueData, lid, ttl.Milliseconds(), maxIdle.Milliseconds())
+		request := codec2.EncodeMapPutIfAbsentWithMaxIdleRequest(m.name, keyData, valueData, lid, ttl.Milliseconds(), maxIdle.Milliseconds())
 		if response, err := m.invokeOnKey(ctx, request, keyData); err != nil {
 			return nil, err
 		} else {
-			return codec.DecodeMapPutIfAbsentWithMaxIdleResponse(response), nil
+			return codec2.DecodeMapPutIfAbsentWithMaxIdleResponse(response), nil
 		}
 	}
 }
@@ -674,11 +675,11 @@ func (m *Map) Remove(ctx context.Context, key interface{}) (interface{}, error) 
 	if keyData, err := m.validateAndSerialize(key); err != nil {
 		return nil, err
 	} else {
-		request := codec.EncodeMapRemoveRequest(m.name, keyData, lid)
+		request := codec2.EncodeMapRemoveRequest(m.name, keyData, lid)
 		if response, err := m.invokeOnKey(ctx, request, keyData); err != nil {
 			return nil, err
 		} else {
-			return m.convertToObject(codec.DecodeMapRemoveResponse(response))
+			return m.convertToObject(codec2.DecodeMapRemoveResponse(response))
 		}
 	}
 }
@@ -688,7 +689,7 @@ func (m *Map) RemoveAll(ctx context.Context, predicate predicate.Predicate) erro
 	if predicateData, err := m.validateAndSerialize(predicate); err != nil {
 		return err
 	} else {
-		request := codec.EncodeMapRemoveAllRequest(m.name, predicateData)
+		request := codec2.EncodeMapRemoveAllRequest(m.name, predicateData)
 		_, err := m.invokeOnRandomTarget(ctx, request, nil)
 		return err
 	}
@@ -701,11 +702,11 @@ func (m *Map) RemoveEntryListener(ctx context.Context, subscriptionID types.UUID
 
 // RemoveInterceptor removes the interceptor.
 func (m *Map) RemoveInterceptor(ctx context.Context, registrationID string) (bool, error) {
-	request := codec.EncodeMapRemoveInterceptorRequest(m.name, registrationID)
+	request := codec2.EncodeMapRemoveInterceptorRequest(m.name, registrationID)
 	if response, err := m.invokeOnRandomTarget(ctx, request, nil); err != nil {
 		return false, nil
 	} else {
-		return codec.DecodeMapRemoveInterceptorResponse(response), nil
+		return codec2.DecodeMapRemoveInterceptorResponse(response), nil
 	}
 }
 
@@ -716,11 +717,11 @@ func (m *Map) RemoveIfSame(ctx context.Context, key interface{}, value interface
 	if keyData, valueData, err := m.validateAndSerialize2(key, value); err != nil {
 		return false, err
 	} else {
-		request := codec.EncodeMapRemoveIfSameRequest(m.name, keyData, valueData, lid)
+		request := codec2.EncodeMapRemoveIfSameRequest(m.name, keyData, valueData, lid)
 		if response, err := m.invokeOnKey(ctx, request, keyData); err != nil {
 			return false, err
 		} else {
-			return codec.DecodeMapRemoveIfSameResponse(response), nil
+			return codec2.DecodeMapRemoveIfSameResponse(response), nil
 		}
 	}
 }
@@ -731,11 +732,11 @@ func (m *Map) Replace(ctx context.Context, key interface{}, value interface{}) (
 	if keyData, valueData, err := m.validateAndSerialize2(key, value); err != nil {
 		return nil, err
 	} else {
-		request := codec.EncodeMapReplaceRequest(m.name, keyData, valueData, lid)
+		request := codec2.EncodeMapReplaceRequest(m.name, keyData, valueData, lid)
 		if response, err := m.invokeOnKey(ctx, request, keyData); err != nil {
 			return nil, err
 		} else {
-			return m.convertToObject(codec.DecodeMapReplaceResponse(response))
+			return m.convertToObject(codec2.DecodeMapReplaceResponse(response))
 		}
 	}
 }
@@ -747,11 +748,11 @@ func (m *Map) ReplaceIfSame(ctx context.Context, key interface{}, oldValue inter
 	if keyData, oldValueData, newValueData, err := m.validateAndSerialize3(key, oldValue, newValue); err != nil {
 		return false, err
 	} else {
-		request := codec.EncodeMapReplaceIfSameRequest(m.name, keyData, oldValueData, newValueData, lid)
+		request := codec2.EncodeMapReplaceIfSameRequest(m.name, keyData, oldValueData, newValueData, lid)
 		if response, err := m.invokeOnKey(ctx, request, keyData); err != nil {
 			return false, err
 		} else {
-			return codec.DecodeMapReplaceIfSameResponse(response), nil
+			return codec2.DecodeMapReplaceIfSameResponse(response), nil
 		}
 	}
 }
@@ -768,7 +769,7 @@ func (m *Map) SetTTL(ctx context.Context, key interface{}, ttl time.Duration) er
 	if keyData, err := m.validateAndSerialize(key); err != nil {
 		return err
 	} else {
-		request := codec.EncodeMapSetTtlRequest(m.name, keyData, ttl.Milliseconds())
+		request := codec2.EncodeMapSetTtlRequest(m.name, keyData, ttl.Milliseconds())
 		_, err := m.invokeOnKey(ctx, request, keyData)
 		return err
 	}
@@ -791,7 +792,7 @@ func (m *Map) SetWithTTLAndMaxIdle(ctx context.Context, key interface{}, value i
 	if keyData, valueData, err := m.validateAndSerialize2(key, value); err != nil {
 		return err
 	} else {
-		request := codec.EncodeMapSetWithMaxIdleRequest(m.name, keyData, valueData, lid, ttl.Milliseconds(), maxIdle.Milliseconds())
+		request := codec2.EncodeMapSetWithMaxIdleRequest(m.name, keyData, valueData, lid, ttl.Milliseconds(), maxIdle.Milliseconds())
 		_, err := m.invokeOnKey(ctx, request, keyData)
 		return err
 	}
@@ -799,11 +800,11 @@ func (m *Map) SetWithTTLAndMaxIdle(ctx context.Context, key interface{}, value i
 
 // Size returns the number of entries in this map.
 func (m *Map) Size(ctx context.Context) (int, error) {
-	request := codec.EncodeMapSizeRequest(m.name)
+	request := codec2.EncodeMapSizeRequest(m.name)
 	if response, err := m.invokeOnRandomTarget(ctx, request, nil); err != nil {
 		return 0, err
 	} else {
-		return int(codec.DecodeMapSizeResponse(response)), nil
+		return int(codec2.DecodeMapSizeResponse(response)), nil
 	}
 }
 
@@ -859,7 +860,7 @@ func (m *Map) Unlock(ctx context.Context, key interface{}) error {
 		return err
 	} else {
 		refID := m.refIDGen.NextID()
-		request := codec.EncodeMapUnlockRequest(m.name, keyData, lid, refID)
+		request := codec2.EncodeMapUnlockRequest(m.name, keyData, lid, refID)
 		_, err = m.invokeOnKey(ctx, request, keyData)
 		return err
 	}
@@ -869,7 +870,7 @@ func (m *Map) addIndex(ctx context.Context, indexConfig types.IndexConfig) error
 	if err := validateAndNormalizeIndexConfig(&indexConfig); err != nil {
 		return err
 	}
-	request := codec.EncodeMapAddIndexRequest(m.name, indexConfig)
+	request := codec2.EncodeMapAddIndexRequest(m.name, indexConfig)
 	_, err := m.invokeOnRandomTarget(ctx, request, nil)
 	return err
 }
@@ -890,10 +891,10 @@ func (m *Map) addEntryListener(ctx context.Context, flags int32, includeValue bo
 	}
 	subscriptionID := types.NewUUID()
 	addRequest := m.makeListenerRequest(keyData, predicateData, flags, includeValue)
-	listenerHandler := func(msg *proto.ClientMessage) {
+	listenerHandler := func(msg *proto2.ClientMessage) {
 		m.makeListenerDecoder(msg, keyData, predicateData, m.makeEntryNotifiedListenerHandler(handler))
 	}
-	removeRequest := codec.EncodeMapRemoveEntryListenerRequest(m.name, subscriptionID)
+	removeRequest := codec2.EncodeMapRemoveEntryListenerRequest(m.name, subscriptionID)
 	err = m.listenerBinder.Add(ctx, subscriptionID, addRequest, removeRequest, listenerHandler)
 	return subscriptionID, err
 }
@@ -902,9 +903,9 @@ func (m *Map) loadAll(ctx context.Context, replaceExisting bool, keys ...interfa
 	if len(keys) == 0 {
 		return nil
 	}
-	var request *proto.ClientMessage
+	var request *proto2.ClientMessage
 	if len(keys) == 0 {
-		request = codec.EncodeMapLoadAllRequest(m.name, replaceExisting)
+		request = codec2.EncodeMapLoadAllRequest(m.name, replaceExisting)
 	} else {
 		keyDatas := make([]*serialization.Data, 0, len(keys))
 		for _, key := range keys {
@@ -914,7 +915,7 @@ func (m *Map) loadAll(ctx context.Context, replaceExisting bool, keys ...interfa
 				keyDatas = append(keyDatas, keyData)
 			}
 		}
-		request = codec.EncodeMapLoadGivenKeysRequest(m.name, keyDatas, replaceExisting)
+		request = codec2.EncodeMapLoadGivenKeysRequest(m.name, keyDatas, replaceExisting)
 	}
 	_, err := m.invokeOnRandomTarget(ctx, request, nil)
 	return err
@@ -926,7 +927,7 @@ func (m *Map) lock(ctx context.Context, key interface{}, ttl int64) error {
 		return err
 	} else {
 		refID := m.refIDGen.NextID()
-		request := codec.EncodeMapLockRequest(m.name, keyData, lid, ttl, refID)
+		request := codec2.EncodeMapLockRequest(m.name, keyData, lid, ttl, refID)
 		_, err = m.invokeOnKey(ctx, request, keyData)
 		return err
 	}
@@ -937,11 +938,11 @@ func (m *Map) putWithTTL(ctx context.Context, key interface{}, value interface{}
 	if keyData, valueData, err := m.validateAndSerialize2(key, value); err != nil {
 		return nil, err
 	} else {
-		request := codec.EncodeMapPutRequest(m.name, keyData, valueData, lid, ttl)
+		request := codec2.EncodeMapPutRequest(m.name, keyData, valueData, lid, ttl)
 		if response, err := m.invokeOnKey(ctx, request, keyData); err != nil {
 			return nil, err
 		} else {
-			return m.convertToObject(codec.DecodeMapPutResponse(response))
+			return m.convertToObject(codec2.DecodeMapPutResponse(response))
 		}
 	}
 }
@@ -951,11 +952,11 @@ func (m *Map) putMaxIdle(ctx context.Context, key interface{}, value interface{}
 	if keyData, valueData, err := m.validateAndSerialize2(key, value); err != nil {
 		return nil, err
 	} else {
-		request := codec.EncodeMapPutWithMaxIdleRequest(m.name, keyData, valueData, lid, ttl, maxIdle)
+		request := codec2.EncodeMapPutWithMaxIdleRequest(m.name, keyData, valueData, lid, ttl, maxIdle)
 		if response, err := m.invokeOnKey(ctx, request, keyData); err != nil {
 			return nil, err
 		} else {
-			return m.convertToObject(codec.DecodeMapPutWithMaxIdleResponse(response))
+			return m.convertToObject(codec2.DecodeMapPutWithMaxIdleResponse(response))
 		}
 	}
 }
@@ -965,11 +966,11 @@ func (m *Map) putIfAbsent(ctx context.Context, key interface{}, value interface{
 	if keyData, valueData, err := m.validateAndSerialize2(key, value); err != nil {
 		return nil, err
 	} else {
-		request := codec.EncodeMapPutIfAbsentRequest(m.name, keyData, valueData, lid, ttl)
+		request := codec2.EncodeMapPutIfAbsentRequest(m.name, keyData, valueData, lid, ttl)
 		if response, err := m.invokeOnKey(ctx, request, keyData); err != nil {
 			return nil, err
 		} else {
-			return codec.DecodeMapPutIfAbsentResponse(response), nil
+			return codec2.DecodeMapPutIfAbsentResponse(response), nil
 		}
 	}
 }
@@ -979,7 +980,7 @@ func (m *Map) putTransient(ctx context.Context, key interface{}, value interface
 	if keyData, valueData, err := m.validateAndSerialize2(key, value); err != nil {
 		return err
 	} else {
-		request := codec.EncodeMapPutTransientRequest(m.name, keyData, valueData, lid, ttl)
+		request := codec2.EncodeMapPutTransientRequest(m.name, keyData, valueData, lid, ttl)
 		_, err = m.invokeOnKey(ctx, request, keyData)
 		return err
 	}
@@ -990,7 +991,7 @@ func (m *Map) putTransientWithMaxIdle(ctx context.Context, key interface{}, valu
 	if keyData, valueData, err := m.validateAndSerialize2(key, value); err != nil {
 		return err
 	} else {
-		request := codec.EncodeMapPutTransientWithMaxIdleRequest(m.name, keyData, valueData, lid, ttl, maxIdle)
+		request := codec2.EncodeMapPutTransientWithMaxIdleRequest(m.name, keyData, valueData, lid, ttl, maxIdle)
 		_, err = m.invokeOnKey(ctx, request, keyData)
 		return err
 	}
@@ -1002,39 +1003,39 @@ func (m *Map) tryLock(ctx context.Context, key interface{}, lease int64, timeout
 		return false, err
 	} else {
 		refID := m.refIDGen.NextID()
-		request := codec.EncodeMapTryLockRequest(m.name, keyData, lid, lease, timeout, refID)
+		request := codec2.EncodeMapTryLockRequest(m.name, keyData, lid, lease, timeout, refID)
 		if response, err := m.invokeOnKey(ctx, request, keyData); err != nil {
 			return false, err
 		} else {
-			return codec.DecodeMapTryLockResponse(response), nil
+			return codec2.DecodeMapTryLockResponse(response), nil
 		}
 	}
 }
 
-func (m *Map) makeListenerRequest(keyData, predicateData *serialization.Data, flags int32, includeValue bool) *proto.ClientMessage {
+func (m *Map) makeListenerRequest(keyData, predicateData *serialization.Data, flags int32, includeValue bool) *proto2.ClientMessage {
 	if keyData != nil {
 		if predicateData != nil {
-			return codec.EncodeMapAddEntryListenerToKeyWithPredicateRequest(m.name, keyData, predicateData, includeValue, flags, m.smart)
+			return codec2.EncodeMapAddEntryListenerToKeyWithPredicateRequest(m.name, keyData, predicateData, includeValue, flags, m.smart)
 		}
-		return codec.EncodeMapAddEntryListenerToKeyRequest(m.name, keyData, includeValue, flags, m.smart)
+		return codec2.EncodeMapAddEntryListenerToKeyRequest(m.name, keyData, includeValue, flags, m.smart)
 	}
 	if predicateData != nil {
-		return codec.EncodeMapAddEntryListenerWithPredicateRequest(m.name, predicateData, includeValue, flags, m.smart)
+		return codec2.EncodeMapAddEntryListenerWithPredicateRequest(m.name, predicateData, includeValue, flags, m.smart)
 	}
-	return codec.EncodeMapAddEntryListenerRequest(m.name, includeValue, flags, m.smart)
+	return codec2.EncodeMapAddEntryListenerRequest(m.name, includeValue, flags, m.smart)
 }
 
-func (m *Map) makeListenerDecoder(msg *proto.ClientMessage, keyData, predicateData *serialization.Data, handler entryNotifiedHandler) {
+func (m *Map) makeListenerDecoder(msg *proto2.ClientMessage, keyData, predicateData *serialization.Data, handler entryNotifiedHandler) {
 	if keyData != nil {
 		if predicateData != nil {
-			codec.HandleMapAddEntryListenerToKeyWithPredicate(msg, handler)
+			codec2.HandleMapAddEntryListenerToKeyWithPredicate(msg, handler)
 		} else {
-			codec.HandleMapAddEntryListenerToKey(msg, handler)
+			codec2.HandleMapAddEntryListenerToKey(msg, handler)
 		}
 	} else if predicateData != nil {
-		codec.HandleMapAddEntryListenerWithPredicate(msg, handler)
+		codec2.HandleMapAddEntryListenerWithPredicate(msg, handler)
 	} else {
-		codec.HandleMapAddEntryListener(msg, handler)
+		codec2.HandleMapAddEntryListener(msg, handler)
 	}
 }
 
@@ -1043,7 +1044,7 @@ func (m *Map) set(ctx context.Context, key interface{}, value interface{}, ttl i
 	if keyData, valueData, err := m.validateAndSerialize2(key, value); err != nil {
 		return err
 	} else {
-		request := codec.EncodeMapSetRequest(m.name, keyData, valueData, lid, ttl)
+		request := codec2.EncodeMapSetRequest(m.name, keyData, valueData, lid, ttl)
 		_, err := m.invokeOnKey(ctx, request, keyData)
 		return err
 	}
@@ -1054,11 +1055,11 @@ func (m *Map) tryPut(ctx context.Context, key interface{}, value interface{}, ti
 	if keyData, valueData, err := m.validateAndSerialize2(key, value); err != nil {
 		return false, err
 	} else {
-		request := codec.EncodeMapTryPutRequest(m.name, keyData, valueData, lid, timeout)
+		request := codec2.EncodeMapTryPutRequest(m.name, keyData, valueData, lid, timeout)
 		if response, err := m.invokeOnKey(ctx, request, keyData); err != nil {
 			return false, err
 		} else {
-			return codec.DecodeMapTryPutResponse(response), nil
+			return codec2.DecodeMapTryPutResponse(response), nil
 		}
 	}
 }
@@ -1068,16 +1069,16 @@ func (m *Map) tryRemove(ctx context.Context, key interface{}, timeout int64) (in
 	if keyData, err := m.validateAndSerialize(key); err != nil {
 		return false, err
 	} else {
-		request := codec.EncodeMapTryRemoveRequest(m.name, keyData, lid, timeout)
+		request := codec2.EncodeMapTryRemoveRequest(m.name, keyData, lid, timeout)
 		if response, err := m.invokeOnKey(ctx, request, keyData); err != nil {
 			return nil, err
 		} else {
-			return codec.DecodeMapTryRemoveResponse(response), nil
+			return codec2.DecodeMapTryRemoveResponse(response), nil
 		}
 	}
 }
 
-func (m *Map) aggregate(ctx context.Context, req *proto.ClientMessage, decoder func(message *proto.ClientMessage) *serialization.Data) (interface{}, error) {
+func (m *Map) aggregate(ctx context.Context, req *proto2.ClientMessage, decoder func(message *proto2.ClientMessage) *serialization.Data) (interface{}, error) {
 	resp, err := m.invokeOnRandomTarget(ctx, req, nil)
 	if err != nil {
 		return nil, err

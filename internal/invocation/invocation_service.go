@@ -19,8 +19,9 @@ package invocation
 import (
 	"fmt"
 
+	"github.com/hazelcast/hazelcast-go-client/proto"
+
 	ilogger "github.com/hazelcast/hazelcast-go-client/internal/logger"
-	"github.com/hazelcast/hazelcast-go-client/internal/proto"
 )
 
 type Handler interface {

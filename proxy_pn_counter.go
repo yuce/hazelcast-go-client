@@ -20,12 +20,13 @@ import (
 	"context"
 	"sync"
 
+	proto2 "github.com/hazelcast/hazelcast-go-client/proto"
+	codec2 "github.com/hazelcast/hazelcast-go-client/proto/codec"
+
 	"github.com/hazelcast/hazelcast-go-client/cluster"
 	"github.com/hazelcast/hazelcast-go-client/hzerrors"
 	"github.com/hazelcast/hazelcast-go-client/internal/cb"
 	ihzerrors "github.com/hazelcast/hazelcast-go-client/internal/hzerrors"
-	"github.com/hazelcast/hazelcast-go-client/internal/proto"
-	"github.com/hazelcast/hazelcast-go-client/internal/proto/codec"
 	iproxy "github.com/hazelcast/hazelcast-go-client/internal/proxy"
 	"github.com/hazelcast/hazelcast-go-client/types"
 )
@@ -81,13 +82,13 @@ func (pn *PNCounter) DecrementAndGet(ctx context.Context) (int64, error) {
 
 // Get returns the current value of the counter.
 func (pn *PNCounter) Get(ctx context.Context) (int64, error) {
-	resp, err := pn.invokeOnMember(ctx, func(uuid types.UUID, clocks []proto.Pair) *proto.ClientMessage {
-		return codec.EncodePNCounterGetRequest(pn.name, clocks, uuid)
+	resp, err := pn.invokeOnMember(ctx, func(uuid types.UUID, clocks []proto2.Pair) *proto2.ClientMessage {
+		return codec2.EncodePNCounterGetRequest(pn.name, clocks, uuid)
 	})
 	if err != nil {
 		return 0, err
 	}
-	value, timestamps, _ := codec.DecodePNCounterGetResponse(resp)
+	value, timestamps, _ := codec2.DecodePNCounterGetResponse(resp)
 	pn.updateClock(iproxy.NewVectorClockFromPairs(timestamps))
 	return value, nil
 }
@@ -129,7 +130,7 @@ func (pn *PNCounter) SubtractAndGet(ctx context.Context, delta int64) (int64, er
 	return pn.add(ctx, -1*delta, false)
 }
 
-func (pn *PNCounter) crdtOperationTarget(excluded map[cluster.Address]struct{}) (*cluster.MemberInfo, []proto.Pair, error) {
+func (pn *PNCounter) crdtOperationTarget(excluded map[cluster.Address]struct{}) (*cluster.MemberInfo, []proto2.Pair, error) {
 	pn.mu.Lock()
 	defer pn.mu.Unlock()
 	target := pn.target
@@ -159,22 +160,22 @@ func (pn *PNCounter) updateClock(clock iproxy.VectorClock) {
 }
 
 func (pn *PNCounter) add(ctx context.Context, delta int64, getBeforeUpdate bool) (int64, error) {
-	resp, err := pn.invokeOnMember(ctx, func(uuid types.UUID, clocks []proto.Pair) *proto.ClientMessage {
-		return codec.EncodePNCounterAddRequest(pn.name, delta, getBeforeUpdate, clocks, uuid)
+	resp, err := pn.invokeOnMember(ctx, func(uuid types.UUID, clocks []proto2.Pair) *proto2.ClientMessage {
+		return codec2.EncodePNCounterAddRequest(pn.name, delta, getBeforeUpdate, clocks, uuid)
 	})
 	if err != nil {
 		return 0, err
 	}
-	value, timestamps, _ := codec.DecodePNCounterAddResponse(resp)
+	value, timestamps, _ := codec2.DecodePNCounterAddResponse(resp)
 	pn.updateClock(iproxy.NewVectorClockFromPairs(timestamps))
 	return value, nil
 }
 
-func (pn *PNCounter) invokeOnMember(ctx context.Context, makeReq func(target types.UUID, clocks []proto.Pair) *proto.ClientMessage) (*proto.ClientMessage, error) {
+func (pn *PNCounter) invokeOnMember(ctx context.Context, makeReq func(target types.UUID, clocks []proto2.Pair) *proto2.ClientMessage) (*proto2.ClientMessage, error) {
 	// in the best case scenario, no members will be excluded, so excluded set is nil
 	var excluded map[cluster.Address]struct{}
 	var lastAddr cluster.Address
-	var request *proto.ClientMessage
+	var request *proto2.ClientMessage
 	return pn.tryInvoke(ctx, func(ctx context.Context, attempt int) (interface{}, error) {
 		if attempt == 1 {
 			// this is the first failure, time to allocate the excluded set

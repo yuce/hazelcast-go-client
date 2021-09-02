@@ -19,8 +19,9 @@ package hazelcast
 import (
 	"context"
 
-	"github.com/hazelcast/hazelcast-go-client/internal/proto"
-	"github.com/hazelcast/hazelcast-go-client/internal/proto/codec"
+	"github.com/hazelcast/hazelcast-go-client/proto"
+	codec2 "github.com/hazelcast/hazelcast-go-client/proto/codec"
+
 	iserialization "github.com/hazelcast/hazelcast-go-client/internal/serialization"
 	"github.com/hazelcast/hazelcast-go-client/types"
 )
@@ -50,11 +51,11 @@ func (s *Set) Add(ctx context.Context, item interface{}) (bool, error) {
 	if itemData, err := s.validateAndSerialize(item); err != nil {
 		return false, err
 	} else {
-		request := codec.EncodeSetAddRequest(s.name, itemData)
+		request := codec2.EncodeSetAddRequest(s.name, itemData)
 		if resp, err := s.invokeOnPartition(ctx, request, s.partitionID); err != nil {
 			return false, err
 		} else {
-			return codec.DecodeSetAddResponse(resp), nil
+			return codec2.DecodeSetAddResponse(resp), nil
 		}
 	}
 }
@@ -68,11 +69,11 @@ func (s *Set) AddAll(ctx context.Context, values ...interface{}) (bool, error) {
 	if valuesData, err := s.validateAndSerializeValues(values); err != nil {
 		return false, err
 	} else {
-		request := codec.EncodeSetAddAllRequest(s.name, valuesData)
+		request := codec2.EncodeSetAddAllRequest(s.name, valuesData)
 		if response, err := s.invokeOnPartition(ctx, request, s.partitionID); err != nil {
 			return false, err
 		} else {
-			return codec.DecodeSetAddAllResponse(response), nil
+			return codec2.DecodeSetAddAllResponse(response), nil
 		}
 	}
 }
@@ -87,7 +88,7 @@ func (s *Set) AddItemListener(ctx context.Context, includeValue bool, handler Se
 // Clear clears this set.
 // Set will be empty after this call.
 func (s *Set) Clear(ctx context.Context) error {
-	request := codec.EncodeSetClearRequest(s.name)
+	request := codec2.EncodeSetClearRequest(s.name)
 	_, err := s.invokeOnPartition(ctx, request, s.partitionID)
 	return err
 }
@@ -97,11 +98,11 @@ func (s *Set) Contains(ctx context.Context, value interface{}) (bool, error) {
 	if valueData, err := s.validateAndSerialize(value); err != nil {
 		return false, err
 	} else {
-		request := codec.EncodeSetContainsRequest(s.name, valueData)
+		request := codec2.EncodeSetContainsRequest(s.name, valueData)
 		if response, err := s.invokeOnPartition(ctx, request, s.partitionID); err != nil {
 			return false, err
 		} else {
-			return codec.DecodeSetContainsResponse(response), nil
+			return codec2.DecodeSetContainsResponse(response), nil
 		}
 	}
 }
@@ -114,32 +115,32 @@ func (s *Set) ContainsAll(ctx context.Context, values ...interface{}) (bool, err
 	if valuesData, err := s.validateAndSerializeValues(values); err != nil {
 		return false, err
 	} else {
-		request := codec.EncodeSetContainsAllRequest(s.name, valuesData)
+		request := codec2.EncodeSetContainsAllRequest(s.name, valuesData)
 		if response, err := s.invokeOnPartition(ctx, request, s.partitionID); err != nil {
 			return false, err
 		} else {
-			return codec.DecodeSetContainsAllResponse(response), nil
+			return codec2.DecodeSetContainsAllResponse(response), nil
 		}
 	}
 }
 
 // GetAll returns the entries for the given keys.
 func (s *Set) GetAll(ctx context.Context) ([]interface{}, error) {
-	request := codec.EncodeSetGetAllRequest(s.name)
+	request := codec2.EncodeSetGetAllRequest(s.name)
 	if response, err := s.invokeOnPartition(ctx, request, s.partitionID); err != nil {
 		return nil, err
 	} else {
-		return s.convertToObjects(codec.DecodeSetGetAllResponse(response))
+		return s.convertToObjects(codec2.DecodeSetGetAllResponse(response))
 	}
 }
 
 // IsEmpty returns true if the set is empty.
 func (s *Set) IsEmpty(ctx context.Context) (bool, error) {
-	request := codec.EncodeSetIsEmptyRequest(s.name)
+	request := codec2.EncodeSetIsEmptyRequest(s.name)
 	if response, err := s.invokeOnPartition(ctx, request, s.partitionID); err != nil {
 		return false, err
 	} else {
-		return codec.DecodeSetIsEmptyResponse(response), nil
+		return codec2.DecodeSetIsEmptyResponse(response), nil
 	}
 }
 
@@ -148,11 +149,11 @@ func (s *Set) Remove(ctx context.Context, value interface{}) (bool, error) {
 	if data, err := s.validateAndSerialize(value); err != nil {
 		return false, err
 	} else {
-		request := codec.EncodeSetRemoveRequest(s.name, data)
+		request := codec2.EncodeSetRemoveRequest(s.name, data)
 		if response, err := s.invokeOnPartition(ctx, request, s.partitionID); err != nil {
 			return false, nil
 		} else {
-			return codec.DecodeSetRemoveResponse(response), nil
+			return codec2.DecodeSetRemoveResponse(response), nil
 		}
 	}
 }
@@ -166,11 +167,11 @@ func (s *Set) RemoveAll(ctx context.Context, values ...interface{}) (bool, error
 	if valuesData, err := s.validateAndSerializeValues(values); err != nil {
 		return false, err
 	} else {
-		request := codec.EncodeSetCompareAndRemoveAllRequest(s.name, valuesData)
+		request := codec2.EncodeSetCompareAndRemoveAllRequest(s.name, valuesData)
 		if response, err := s.invokeOnPartition(ctx, request, s.partitionID); err != nil {
 			return false, err
 		} else {
-			return codec.DecodeSetCompareAndRemoveAllResponse(response), nil
+			return codec2.DecodeSetCompareAndRemoveAllResponse(response), nil
 		}
 	}
 }
@@ -189,31 +190,31 @@ func (s *Set) RetainAll(ctx context.Context, values ...interface{}) (bool, error
 	if valuesData, err := s.validateAndSerializeValues(values); err != nil {
 		return false, err
 	} else {
-		request := codec.EncodeSetCompareAndRetainAllRequest(s.name, valuesData)
+		request := codec2.EncodeSetCompareAndRetainAllRequest(s.name, valuesData)
 		if response, err := s.invokeOnPartition(ctx, request, s.partitionID); err != nil {
 			return false, err
 		} else {
-			return codec.DecodeSetCompareAndRetainAllResponse(response), nil
+			return codec2.DecodeSetCompareAndRetainAllResponse(response), nil
 		}
 	}
 }
 
 // Size returns the number of elements in this set.
 func (s *Set) Size(ctx context.Context) (int, error) {
-	request := codec.EncodeSetSizeRequest(s.name)
+	request := codec2.EncodeSetSizeRequest(s.name)
 	if response, err := s.invokeOnPartition(ctx, request, s.partitionID); err != nil {
 		return 0, err
 	} else {
-		return int(codec.DecodeSetSizeResponse(response)), nil
+		return int(codec2.DecodeSetSizeResponse(response)), nil
 	}
 }
 
 func (s *Set) addListener(ctx context.Context, includeValue bool, handler SetItemNotifiedHandler) (types.UUID, error) {
 	subscriptionID := types.NewUUID()
-	addRequest := codec.EncodeSetAddListenerRequest(s.name, includeValue, s.smart)
-	removeRequest := codec.EncodeSetRemoveListenerRequest(s.name, subscriptionID)
+	addRequest := codec2.EncodeSetAddListenerRequest(s.name, includeValue, s.smart)
+	removeRequest := codec2.EncodeSetRemoveListenerRequest(s.name, subscriptionID)
 	listenerHandler := func(msg *proto.ClientMessage) {
-		codec.HandleSetAddListener(msg, func(itemData *iserialization.Data, uuid types.UUID, eventType int32) {
+		codec2.HandleSetAddListener(msg, func(itemData *iserialization.Data, uuid types.UUID, eventType int32) {
 			if item, err := s.convertToObject(itemData); err != nil {
 				s.logger.Warnf("cannot convert data to Go value")
 			} else {

@@ -26,6 +26,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/hazelcast/hazelcast-go-client/proto"
+	codec2 "github.com/hazelcast/hazelcast-go-client/proto/codec"
+
 	pubcluster "github.com/hazelcast/hazelcast-go-client/cluster"
 	"github.com/hazelcast/hazelcast-go-client/hzerrors"
 	"github.com/hazelcast/hazelcast-go-client/internal"
@@ -34,8 +37,6 @@ import (
 	ihzerrors "github.com/hazelcast/hazelcast-go-client/internal/hzerrors"
 	"github.com/hazelcast/hazelcast-go-client/internal/invocation"
 	ilogger "github.com/hazelcast/hazelcast-go-client/internal/logger"
-	"github.com/hazelcast/hazelcast-go-client/internal/proto"
-	"github.com/hazelcast/hazelcast-go-client/internal/proto/codec"
 	"github.com/hazelcast/hazelcast-go-client/internal/security"
 	iserialization "github.com/hazelcast/hazelcast-go-client/internal/serialization"
 	"github.com/hazelcast/hazelcast-go-client/internal/util"
@@ -522,7 +523,7 @@ func (m *ConnectionManager) authenticate(ctx context.Context, conn *Connection) 
 
 func (m *ConnectionManager) processAuthenticationResult(conn *Connection, result *proto.ClientMessage) error {
 	// TODO: use memberUUID v
-	status, address, _, _, serverHazelcastVersion, partitionCount, newClusterID, failoverSupported := codec.DecodeClientAuthenticationResponse(result)
+	status, address, _, _, serverHazelcastVersion, partitionCount, newClusterID, failoverSupported := codec2.DecodeClientAuthenticationResponse(result)
 	if m.failoverConfig.Enabled && !failoverSupported {
 		m.logger.Warnf("cluster does not support failover: this feature is available in Hazelcast Enterprise")
 		status = notAllowedInCluster
@@ -589,7 +590,7 @@ func (m *ConnectionManager) encodeAuthenticationRequest() *proto.ClientMessage {
 }
 
 func (m *ConnectionManager) createAuthenticationRequest(clusterName string, creds *security.UsernamePasswordCredentials) *proto.ClientMessage {
-	return codec.EncodeClientAuthenticationRequest(
+	return codec2.EncodeClientAuthenticationRequest(
 		clusterName,
 		creds.Username(),
 		creds.Password(),
@@ -618,7 +619,7 @@ func (m *ConnectionManager) heartbeat() {
 }
 
 func (m *ConnectionManager) sendHeartbeat(conn *Connection) {
-	request := codec.EncodeClientPingRequest()
+	request := codec2.EncodeClientPingRequest()
 	inv := m.invocationFactory.NewConnectionBoundInvocation(request, conn, nil)
 	select {
 	case m.requestCh <- inv:

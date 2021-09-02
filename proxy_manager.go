@@ -21,9 +21,10 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/hazelcast/hazelcast-go-client/internal/proto"
-	"github.com/hazelcast/hazelcast-go-client/internal/proto/codec"
 	iproxy "github.com/hazelcast/hazelcast-go-client/internal/proxy"
+	"github.com/hazelcast/hazelcast-go-client/internal/serialization"
+	"github.com/hazelcast/hazelcast-go-client/proto"
+	"github.com/hazelcast/hazelcast-go-client/proto/codec"
 	"github.com/hazelcast/hazelcast-go-client/types"
 )
 
@@ -33,6 +34,7 @@ type proxyManager struct {
 	invocationProxy *proxy
 	serviceBundle   creationBundle
 	refIDGenerator  *iproxy.ReferenceIDGenerator
+	gateway         *InternalGateway
 }
 
 func newProxyManager(bundle creationBundle) *proxyManager {
@@ -49,7 +51,12 @@ func newProxyManager(bundle creationBundle) *proxyManager {
 		panic(err)
 	}
 	pm.invocationProxy = p
+	pm.gateway = &InternalGateway{proxy: p}
 	return pm
+}
+
+func (m *proxyManager) internalGateway() *InternalGateway {
+	return m.gateway
 }
 
 func (m *proxyManager) getMap(ctx context.Context, name string) (*Map, error) {
@@ -211,4 +218,29 @@ func (m *proxyManager) getFlakeIDGeneratorConfig(name string) FlakeIDGeneratorCo
 
 func makeProxyName(serviceName string, objectName string) string {
 	return fmt.Sprintf("%s%s", serviceName, objectName)
+}
+
+type InternalGateway struct {
+	proxy *proxy
+}
+
+func (g *InternalGateway) Encode(obj interface{}) ([]byte, error) {
+	data, err := g.proxy.convertToData(obj)
+	if err != nil {
+		return nil, err
+	}
+	return data.Payload, nil
+}
+
+func (g *InternalGateway) Decode(b []byte) (interface{}, error) {
+	data := serialization.Data{Payload: b}
+	o, err := g.proxy.convertToObject(&data)
+	if err != nil {
+		return nil, err
+	}
+	return o, nil
+}
+
+func (g *InternalGateway) InvokeRandom(ctx context.Context, request *proto.ClientMessage, handler proto.ClientMessageHandler) (*proto.ClientMessage, error) {
+	return g.proxy.invokeOnRandomTarget(ctx, request, handler)
 }
