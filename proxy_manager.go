@@ -18,12 +18,14 @@ package hazelcast
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 
 	"github.com/hazelcast/hazelcast-go-client/internal/proto"
 	"github.com/hazelcast/hazelcast-go-client/internal/proto/codec"
 	iproxy "github.com/hazelcast/hazelcast-go-client/internal/proxy"
+	"github.com/hazelcast/hazelcast-go-client/internal/serialization"
 	"github.com/hazelcast/hazelcast-go-client/types"
 )
 
@@ -33,6 +35,7 @@ type proxyManager struct {
 	invocationProxy *proxy
 	serviceBundle   creationBundle
 	refIDGenerator  *iproxy.ReferenceIDGenerator
+	gateway         *gateway
 }
 
 func newProxyManager(bundle creationBundle) *proxyManager {
@@ -49,7 +52,12 @@ func newProxyManager(bundle creationBundle) *proxyManager {
 		panic(err)
 	}
 	pm.invocationProxy = p
+	pm.gateway = &gateway{proxy: p}
 	return pm
+}
+
+func (m *proxyManager) defaultGateway() *gateway {
+	return m.gateway
 }
 
 func (m *proxyManager) getMap(ctx context.Context, name string) (*Map, error) {
@@ -211,4 +219,41 @@ func (m *proxyManager) getFlakeIDGeneratorConfig(name string) FlakeIDGeneratorCo
 
 func makeProxyName(serviceName string, objectName string) string {
 	return fmt.Sprintf("%s%s", serviceName, objectName)
+}
+
+type gateway struct {
+	proxy *proxy
+}
+
+func (g *gateway) Encode(obj interface{}) ([]byte, error) {
+	data, err := g.proxy.convertToData(obj)
+	if err != nil {
+		return nil, err
+	}
+	return data.Payload, nil
+}
+
+func (g *gateway) Decode(b []byte) (interface{}, error) {
+	data := serialization.Data{Payload: b}
+	o, err := g.proxy.convertToObject(&data)
+	if err != nil {
+		return nil, err
+	}
+	return o, nil
+}
+
+func (g *gateway) InvokeRandom(ctx context.Context, request []byte, handler proto.ClientMessageHandler) ([]byte, error) {
+	var r proto.ClientMessage
+	if err := json.Unmarshal(request, &r); err != nil {
+		return nil, err
+	}
+	res, err := g.proxy.invokeOnRandomTarget(ctx, &r, handler)
+	if err != nil {
+		return nil, err
+	}
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
 }

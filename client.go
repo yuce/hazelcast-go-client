@@ -138,6 +138,10 @@ func newClient(config Config) (*Client, error) {
 	return c, nil
 }
 
+func (c *Client) gateway() *gateway {
+	return c.proxyManager.defaultGateway()
+}
+
 // Name returns client's name
 // Use config.Name to set the client name.
 // If not set manually, an automatically generated name is used.
