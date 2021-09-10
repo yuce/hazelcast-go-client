@@ -242,12 +242,12 @@ func (g *gateway) Decode(b []byte) (interface{}, error) {
 	return o, nil
 }
 
-func (g *gateway) InvokeRandom(ctx context.Context, request []byte, handler proto.ClientMessageHandler) ([]byte, error) {
+func (g *gateway) InvokeRandom(ctx context.Context, request []byte) ([]byte, error) {
 	var r proto.ClientMessage
 	if err := json.Unmarshal(request, &r); err != nil {
 		return nil, err
 	}
-	res, err := g.proxy.invokeOnRandomTarget(ctx, &r, handler)
+	res, err := g.proxy.invokeOnRandomTarget(ctx, &r, nil)
 	if err != nil {
 		return nil, err
 	}
