@@ -74,7 +74,6 @@ func StartNewClientWithConfig(ctx context.Context, config Config) (*Client, erro
 // Client enables you to do all Hazelcast operations without being a member of the cluster.
 // It connects to one or more of the cluster members and delegates all cluster wide operations to them.
 type Client struct {
-	gateway                 *gateway
 	invocationHandler       invocation.Handler
 	logger                  ilogger.Logger
 	membershipListenerMapMu *sync.Mutex
@@ -503,7 +502,6 @@ func (c *Client) createComponents(config *Config) {
 	c.proxyManager = newProxyManager(proxyManagerServiceBundle)
 	c.invocationHandler = invocationHandler
 	c.viewListenerService = viewListener
-	c.gateway = c.proxyManager.defaultGateway()
 }
 
 func (c *Client) clusterDisconnected(e event.Event) {
