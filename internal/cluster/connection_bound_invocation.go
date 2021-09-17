@@ -34,9 +34,9 @@ type ConnectionBoundInvocation struct {
 }
 
 func newConnectionBoundInvocation(clientMessage *proto.ClientMessage, partitionID int32, address pubcluster.Address,
-	connection *Connection, deadline time.Time, redoOperation bool) *ConnectionBoundInvocation {
+	connection *Connection, timeout time.Duration, redoOperation bool) *ConnectionBoundInvocation {
 	return &ConnectionBoundInvocation{
-		Impl:            invocation.NewImpl(clientMessage, partitionID, address, deadline, redoOperation),
+		Impl:            invocation.NewImpl(clientMessage, partitionID, address, timeout, redoOperation),
 		boundConnection: connection,
 	}
 }

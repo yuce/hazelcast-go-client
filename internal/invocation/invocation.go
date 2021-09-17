@@ -19,6 +19,7 @@ package invocation
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync/atomic"
 	"time"
 
@@ -31,6 +32,11 @@ import (
 
 var ErrResponseChannelClosed = errors.New("response channel closed")
 
+const (
+	fresh     = 0
+	completed = 1
+)
+
 type Result interface {
 	Get() (*proto.ClientMessage, error)
 	GetWithTimeout(duration time.Duration) (*proto.ClientMessage, error)
@@ -40,7 +46,6 @@ type Invocation interface {
 	Complete(message *proto.ClientMessage)
 	Completed() bool
 	EventHandler() proto.ClientMessageHandler
-	Get() (*proto.ClientMessage, error)
 	GetWithContext(ctx context.Context) (*proto.ClientMessage, error)
 	PartitionID() int32
 	Request() *proto.ClientMessage
@@ -50,7 +55,7 @@ type Invocation interface {
 }
 
 type Impl struct {
-	deadline      time.Time
+	timeout       time.Duration
 	response      chan *proto.ClientMessage
 	eventHandler  func(clientMessage *proto.ClientMessage)
 	request       *proto.ClientMessage
@@ -60,36 +65,29 @@ type Impl struct {
 	RedoOperation bool
 }
 
-func NewImpl(clientMessage *proto.ClientMessage, partitionID int32, address pubcluster.Address, deadline time.Time, redoOperation bool) *Impl {
+func NewImpl(clientMessage *proto.ClientMessage, partitionID int32, address pubcluster.Address, timeout time.Duration, redoOperation bool) *Impl {
 	return &Impl{
 		partitionID:   partitionID,
 		address:       address,
 		request:       clientMessage,
 		response:      make(chan *proto.ClientMessage, 1),
-		deadline:      deadline,
+		timeout:       timeout,
 		RedoOperation: redoOperation,
 	}
 }
 
 func (i *Impl) Complete(message *proto.ClientMessage) {
-	if atomic.CompareAndSwapInt32(&i.completed, 0, 1) {
+	if atomic.CompareAndSwapInt32(&i.completed, fresh, completed) {
 		i.response <- message
 	}
 }
 
 func (i *Impl) Completed() bool {
-	return i.completed != 0
+	return i.completed == completed
 }
 
 func (i *Impl) EventHandler() proto.ClientMessageHandler {
 	return i.eventHandler
-}
-
-func (i *Impl) Get() (*proto.ClientMessage, error) {
-	ctx, cancel := context.WithDeadline(context.Background(), i.deadline)
-	msg, err := i.GetWithContext(ctx)
-	cancel()
-	return msg, err
 }
 
 func (i *Impl) GetWithContext(ctx context.Context) (*proto.ClientMessage, error) {
@@ -102,9 +100,13 @@ func (i *Impl) GetWithContext(ctx context.Context) (*proto.ClientMessage, error)
 	case <-ctx.Done():
 		err := ctx.Err()
 		if err != nil && !i.CanRetry(err) {
+			i.Close()
 			err = cb.WrapNonRetryableError(err)
 		}
 		return nil, err
+	case <-time.After(i.timeout):
+		i.Close()
+		return nil, fmt.Errorf("invocation: %w", hzerrors.ErrOperationTimeout)
 	}
 }
 
@@ -133,7 +135,9 @@ func (i *Impl) SetEventHandler(handler proto.ClientMessageHandler) {
 }
 
 func (i *Impl) Close() {
-	close(i.response)
+	if atomic.CompareAndSwapInt32(&i.completed, fresh, completed) {
+		close(i.response)
+	}
 }
 
 func (i *Impl) CanRetry(err error) bool {

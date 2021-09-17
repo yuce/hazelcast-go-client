@@ -239,7 +239,8 @@ func TestClient_AddDistributedObjectListener(t *testing.T) {
 
 func TestClusterReconnection_ShutdownCluster(t *testing.T) {
 	ctx := context.Background()
-	cls := it.StartNewClusterWithOptions("go-cli-test-cluster", 15701, it.MemberCount())
+	clusterName := it.MakeClusterName("go-cli-test-cluster")
+	cls := it.StartNewClusterWithOptions(clusterName, 15701, it.MemberCount())
 	mu := &sync.Mutex{}
 	events := []hz.LifecycleState{}
 	config := cls.DefaultConfig()
@@ -272,7 +273,7 @@ func TestClusterReconnection_ShutdownCluster(t *testing.T) {
 	}
 	cls.Shutdown()
 	it.WaitEventually(t, &disconnectedWg)
-	cls = it.StartNewClusterWithOptions("go-cli-test-cluster", 15701, it.MemberCount())
+	cls = it.StartNewClusterWithOptions(clusterName, 15701, it.MemberCount())
 	it.WaitEventually(t, &reconnectedWg)
 	cls.Shutdown()
 	c.Shutdown(ctx)
@@ -297,7 +298,7 @@ func TestClusterReconnection_ShutdownCluster(t *testing.T) {
 func TestClusterReconnection_ReconnectModeOff(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	cls := it.StartNewClusterWithOptions("go-cli-test-cluster", 15701, it.MemberCount())
+	cls := it.StartNewClusterWithOptions(it.MakeClusterName("go-cli-test-cluster"), 15701, it.MemberCount())
 	config := cls.DefaultConfig()
 	config.Cluster.ConnectionStrategy.ReconnectMode = cluster.ReconnectModeOff
 	c, err := hz.StartNewClientWithConfig(ctx, config)
@@ -444,7 +445,7 @@ func TestClient_GetProxyInstance(t *testing.T) {
 func TestClientFailover_OSSCluster(t *testing.T) {
 	it.SkipIf(t, "enterprise")
 	ctx := context.Background()
-	cls := it.StartNewClusterWithOptions("failover-test-cluster", 15701, it.MemberCount())
+	cls := it.StartNewClusterWithOptions(it.MakeClusterName("failover-test-cluster"), 15701, it.MemberCount())
 	defer cls.Shutdown()
 	config := cls.DefaultConfig()
 	config.Failover.Enabled = true
@@ -461,7 +462,7 @@ func TestClientFailover_OSSCluster(t *testing.T) {
 func TestClientFailover_EECluster(t *testing.T) {
 	it.SkipIf(t, "oss")
 	ctx := context.Background()
-	cls := it.StartNewClusterWithOptions("failover-test-cluster", 15701, it.MemberCount())
+	cls := it.StartNewClusterWithOptions(it.MakeClusterName("failover-test-cluster"), 15701, it.MemberCount())
 	defer cls.Shutdown()
 	config := cls.DefaultConfig()
 	config.Failover.Enabled = true
@@ -482,8 +483,10 @@ func TestClientFailover_EECluster(t *testing.T) {
 func TestClientFailover_EECluster_Reconnection(t *testing.T) {
 	it.SkipIf(t, "oss")
 	ctx := context.Background()
-	cls1 := it.StartNewClusterWithOptions("failover-test-cluster1", 15701, it.MemberCount())
-	cls2 := it.StartNewClusterWithOptions("failover-test-cluster2", 16701, it.MemberCount())
+	cls1Name := it.MakeClusterName("failover-test-cluster1")
+	cls1 := it.StartNewClusterWithOptions(cls1Name, 15701, it.MemberCount())
+	cls2Name := it.MakeClusterName("failover-test-cluster2")
+	cls2 := it.StartNewClusterWithOptions(cls2Name, 16701, it.MemberCount())
 	defer cls2.Shutdown()
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -492,7 +495,7 @@ func TestClientFailover_EECluster_Reconnection(t *testing.T) {
 	config.Failover.Enabled = true
 	config.Failover.TryCount = 1
 	failoverConfig := config.Cluster
-	failoverConfig.Name = "failover-test-cluster2"
+	failoverConfig.Name = cls2Name
 	failoverConfig.Network.SetAddresses(fmt.Sprintf("localhost:%d", 15702))
 	config.Failover.SetConfigs(failoverConfig)
 	config.AddLifecycleListener(func(event hz.LifecycleStateChanged) {
@@ -514,10 +517,6 @@ func TestClientFailover_EECluster_Reconnection(t *testing.T) {
 	}
 }
 
-func highlight(t *testing.T, format string, args ...interface{}) {
-	log.Printf("\n===\n%s\n===", fmt.Sprintf(format, args...))
-}
-
 func TestClientFixConnection(t *testing.T) {
 	// This test removes the member that corresponds to the connections which receives membership state changes.
 	// Once that connection is closed, another connection should be randomly selected to receive membership state changes.
@@ -526,8 +525,7 @@ func TestClientFixConnection(t *testing.T) {
 	addedCount := int64(0)
 	ctx := context.Background()
 	id := idGen.NextID()
-	clusterName := fmt.Sprintf("600-cluster-%d", id)
-	log.Println("Cluster name:", clusterName)
+	clusterName := it.MakeClusterName("600-cluster")
 	port := 20701 + id*10
 	cls := it.StartNewClusterWithOptions(clusterName, int(port), memberCount)
 	defer cls.Shutdown()
@@ -572,4 +570,8 @@ func TestClientFixConnection(t *testing.T) {
 func TestClientVersion(t *testing.T) {
 	// adding this test here, so there's no "unused lint warning.
 	assert.Equal(t, "1.1.0", hz.ClientVersion)
+}
+
+func highlight(t *testing.T, format string, args ...interface{}) {
+	log.Printf("\n===\n%s\n===", fmt.Sprintf(format, args...))
 }

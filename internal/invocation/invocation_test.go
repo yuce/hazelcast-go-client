@@ -32,7 +32,7 @@ import (
 
 func TestImpl_CanRetry(t *testing.T) {
 	msg := proto.NewClientMessage(proto.NewFrame(make([]byte, 64)))
-	inv := invocation.NewImpl(msg, 0, "", time.Now().Add(10*time.Second), false)
+	inv := invocation.NewImpl(msg, 0, "", 0*time.Second, false)
 	err := errors.New("foo")
 	targetDisconnectedErr := ihzerrors.NewTargetDisconnectedError("foo", nil)
 	noRetries := []error{err, cb.WrapNonRetryableError(err), targetDisconnectedErr}
@@ -41,7 +41,7 @@ func TestImpl_CanRetry(t *testing.T) {
 			t.FailNow()
 		}
 	}
-	inv = invocation.NewImpl(msg, 0, "", time.Now().Add(10*time.Second), true)
+	inv = invocation.NewImpl(msg, 0, "", 10*time.Second, true)
 	if !assert.True(t, inv.CanRetry(targetDisconnectedErr)) {
 		t.FailNow()
 	}
@@ -68,7 +68,7 @@ func TestImpl_CanRetry(t *testing.T) {
 	}
 	msg = proto.NewClientMessage(proto.NewFrame(make([]byte, 64)))
 	msg.SetRetryable(true)
-	inv = invocation.NewImpl(msg, 0, "", time.Now().Add(10*time.Second), false)
+	inv = invocation.NewImpl(msg, 0, "", 10*time.Second, false)
 	if !assert.True(t, inv.CanRetry(targetDisconnectedErr)) {
 		t.FailNow()
 	}

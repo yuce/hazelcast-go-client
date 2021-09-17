@@ -93,7 +93,7 @@ func tryConnectAddressTest(checkedAddresses []CheckedAddressHelper, inputAddress
 		return connMemberCounter, "", err
 	}
 	var m *ConnectionManager
-	resultAddr, err := m.tryConnectAddress(context.TODO(), pubcluster.NewAddress(host, int32(port)),
+	resultAddr, err := m.tryConnectAddress(context.TODO(), pubcluster.NewAddress(host, int32(port)), portRange,
 		func(ctx context.Context, m *ConnectionManager, currAddr pubcluster.Address, mem *pubcluster.MemberInfo) (pubcluster.Address, error) {
 			connMemberCounter++
 			for _, checkedAddr := range checkedAddresses {

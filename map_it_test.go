@@ -200,7 +200,7 @@ func TestMap_SetWithTTL(t *testing.T) {
 	it.MapTester(t, func(t *testing.T, m *hz.Map) {
 		ctx := context.Background()
 		targetValue := "value"
-		if err := m.SetWithTTL(ctx, "key", targetValue, 1*time.Second); err != nil {
+		if err := m.SetWithTTL(ctx, "key", targetValue, 20*time.Second); err != nil {
 			t.Fatal(err)
 		}
 		assert.Equal(t, targetValue, it.MustValue(m.Get(ctx, "key")))
@@ -836,7 +836,7 @@ func TestMap_EntryNotifiedEventWithPredicate(t *testing.T) {
 			it.MustValue(m.Put(context.Background(), key, value))
 		}
 		it.Eventually(t, func() bool {
-			return assert.Equal(t, totalCallCount, atomic.LoadInt32(&callCount))
+			return totalCallCount == atomic.LoadInt32(&callCount)
 		})
 	})
 }
@@ -863,7 +863,7 @@ func TestMap_EntryNotifiedEventToKeyAndPredicate(t *testing.T) {
 		it.MustValue(m.Put(context.Background(), "k1", &it.SamplePortable{A: "bar", B: 10}))
 		it.MustValue(m.Put(context.Background(), "k2", &it.SamplePortable{A: "foo", B: 10}))
 		it.Eventually(t, func() bool {
-			return assert.Equal(t, int32(1), atomic.LoadInt32(&callCount))
+			return int32(1) == atomic.LoadInt32(&callCount)
 		})
 	})
 }

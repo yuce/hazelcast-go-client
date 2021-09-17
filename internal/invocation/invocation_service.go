@@ -85,8 +85,10 @@ loop:
 		}
 	}
 	// remove invocations
-	for _, invocation := range s.invocations {
-		invocation.Close()
+	for _, inv := range s.invocations {
+		if !inv.Completed() {
+			inv.Close()
+		}
 	}
 	s.invocations = nil
 }

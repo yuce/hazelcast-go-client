@@ -34,8 +34,8 @@ type MemberBoundInvocation struct {
 	memberUUID types.UUID
 }
 
-func NewMemberBoundInvocation(msg *proto.ClientMessage, member *pubcluster.MemberInfo, deadline time.Time, redoOperation bool) *MemberBoundInvocation {
-	inv := invocation.NewImpl(msg, -1, member.Address, deadline, redoOperation)
+func NewMemberBoundInvocation(msg *proto.ClientMessage, member *pubcluster.MemberInfo, timeout time.Duration, redoOperation bool) *MemberBoundInvocation {
+	inv := invocation.NewImpl(msg, -1, member.Address, timeout, redoOperation)
 	return &MemberBoundInvocation{Impl: inv, memberUUID: member.UUID}
 }
 

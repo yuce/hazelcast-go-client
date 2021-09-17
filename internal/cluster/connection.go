@@ -95,7 +95,7 @@ func (c *Connection) start(clusterCfg *pubcluster.Config, addr pubcluster.Addres
 		c.lastWrite.Store(time.Time{})
 		c.closedTime.Store(time.Time{})
 		c.lastRead.Store(time.Now())
-		if err := c.sendProtocolStarter(); err != nil {
+		if err = c.sendProtocolStarter(); err != nil {
 			c.socket.Close()
 			c.socket = nil
 			return err
@@ -207,6 +207,7 @@ func (c *Connection) socketReadLoop() {
 		if n == 0 {
 			continue
 		}
+		c.lastRead.Store(time.Now())
 		clientMessageReader.Append(buf[:n])
 		for {
 			clientMessage := clientMessageReader.Read()

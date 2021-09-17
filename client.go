@@ -29,6 +29,7 @@ import (
 	"github.com/hazelcast/hazelcast-go-client/internal"
 	"github.com/hazelcast/hazelcast-go-client/internal/cloud"
 	icluster "github.com/hazelcast/hazelcast-go-client/internal/cluster"
+	"github.com/hazelcast/hazelcast-go-client/internal/debug"
 	"github.com/hazelcast/hazelcast-go-client/internal/event"
 	"github.com/hazelcast/hazelcast-go-client/internal/invocation"
 	ilogger "github.com/hazelcast/hazelcast-go-client/internal/logger"
@@ -87,6 +88,8 @@ type Client struct {
 	userEventDispatcher     *event.DispatchService
 	proxyManager            *proxyManager
 	statsService            *stats.Service
+	heartbeatService        *icluster.HeartbeatService
+	debugService            *debug.Service
 	clusterConfig           *cluster.Config
 	membershipListenerMap   map[types.UUID]int64
 	refIDGen                *iproxy.ReferenceIDGenerator
@@ -94,6 +97,9 @@ type Client struct {
 	lifecyleListenerMapMu   *sync.Mutex
 	name                    string
 	state                   int32
+	lifecycleState          LifecycleState
+	restartCh               chan struct{}
+	doneCh                  chan struct{}
 }
 
 func newClient(config Config) (*Client, error) {
@@ -131,10 +137,13 @@ func newClient(config Config) (*Client, error) {
 		lifecyleListenerMapMu:   &sync.Mutex{},
 		membershipListenerMap:   map[types.UUID]int64{},
 		membershipListenerMapMu: &sync.Mutex{},
+		restartCh:               make(chan struct{}, 1),
+		doneCh:                  make(chan struct{}),
 	}
 	c.addConfigEvents(&config)
 	c.subscribeUserEvents()
 	c.createComponents(&config)
+	go c.checkRestart()
 	return c, nil
 }
 
@@ -226,17 +235,17 @@ func (c *Client) start(ctx context.Context) error {
 	if !atomic.CompareAndSwapInt32(&c.state, created, starting) {
 		return nil
 	}
-	// TODO: Recover from panics and return as error
 	c.eventDispatcher.Publish(newLifecycleStateChanged(LifecycleStateStarting))
+	c.eventDispatcher.Subscribe(icluster.EventDisconnected, event.DefaultSubscriptionID, c.clusterDisconnected)
 	if err := c.connectionManager.Start(ctx); err != nil {
 		c.eventDispatcher.Stop()
 		c.userEventDispatcher.Stop()
 		return err
 	}
+	c.heartbeatService.Start()
 	if c.statsService != nil {
 		c.statsService.Start()
 	}
-	c.eventDispatcher.Subscribe(icluster.EventDisconnected, event.DefaultSubscriptionID, c.clusterDisconnected)
 	atomic.StoreInt32(&c.state, ready)
 	c.eventDispatcher.Publish(newLifecycleStateChanged(LifecycleStateStarted))
 	return nil
@@ -251,10 +260,13 @@ func (c *Client) Shutdown(ctx context.Context) error {
 	}
 	c.eventDispatcher.Publish(newLifecycleStateChanged(LifecycleStateShuttingDown))
 	c.invocationService.Stop()
+	c.heartbeatService.Stop()
 	c.connectionManager.Stop()
 	if c.statsService != nil {
 		c.statsService.Stop()
 	}
+	close(c.doneCh)
+	c.logger.Trace(func() string { return "closed restart channel" })
 	atomic.StoreInt32(&c.state, stopped)
 	c.eventDispatcher.Publish(newLifecycleStateChanged(LifecycleStateShutDown))
 	// wait for the shut down event to be dispatched
@@ -486,6 +498,7 @@ func (c *Client) createComponents(config *Config) {
 		ListenerBinder:       listenerBinder,
 		Logger:               c.logger,
 	}
+	c.heartbeatService = icluster.NewHeartbeatService(connectionManager, invocationFactory, urgentRequestCh, c.logger)
 	if config.Stats.Enabled {
 		c.statsService = stats.NewService(
 			requestCh,
@@ -502,25 +515,51 @@ func (c *Client) createComponents(config *Config) {
 	c.proxyManager = newProxyManager(proxyManagerServiceBundle)
 	c.invocationHandler = invocationHandler
 	c.viewListenerService = viewListener
+	c.debugService = debug.NewService(c.logger)
 }
 
 func (c *Client) clusterDisconnected(e event.Event) {
 	if atomic.LoadInt32(&c.state) != ready {
 		return
 	}
+	c.logger.Trace(func() string {
+		return fmt.Sprintf("writing to restart channel, state: %d", atomic.LoadInt32(&c.state))
+	})
+	c.restartCh <- struct{}{}
+}
+
+func (c *Client) checkRestart() {
+	for {
+		select {
+		case <-c.doneCh:
+			return
+		case _, ok := <-c.restartCh:
+			if ok {
+				c.restart()
+			}
+			return
+		}
+	}
+}
+
+func (c *Client) restart() {
+	if atomic.LoadInt32(&c.state) != ready {
+		return
+	}
 	ctx := context.Background()
 	if c.clusterConfig.ConnectionStrategy.ReconnectMode == cluster.ReconnectModeOff {
 		c.logger.Debug(func() string { return "reconnect mode is off, shutting down" })
+		// ignoring the error on Shutdown
 		c.Shutdown(ctx)
 		return
 	}
 	c.logger.Debug(func() string { return "cluster disconnected, rebooting" })
 	// try to reboot cluster connection
-	c.connectionManager.Stop()
 	c.clusterService.Reset()
 	c.partitionService.Reset()
-	if err := c.connectionManager.Start(ctx); err != nil {
+	if err := c.connectionManager.Restart(context.Background()); err != nil {
 		c.logger.Errorf("cannot reconnect to cluster, shutting down: %w", err)
+		// ignoring the error on Shutdown
 		c.Shutdown(ctx)
 	}
 }

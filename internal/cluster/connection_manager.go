@@ -54,11 +54,17 @@ const (
 	created int32 = iota
 	ready
 	stopped
+	restarting
 )
 
 const (
 	serializationVersion  = 1
 	initialMembersTimeout = 120 * time.Second
+)
+
+const (
+	disconnected = 0
+	connected    = 1
 )
 
 type connectMemberFunc func(ctx context.Context, m *ConnectionManager, addr pubcluster.Address, member *pubcluster.MemberInfo) (pubcluster.Address, error)
@@ -144,7 +150,8 @@ type ConnectionManager struct {
 	state                int32
 	smartRouting         bool
 	memberAddCh          chan types.UUID
-	memberRemoveCh       chan types.UUID
+	memberRemoveCh       chan *Connection
+	connectionState      int32
 }
 
 func NewConnectionManager(bundle ConnectionManagerCreationBundle) *ConnectionManager {
@@ -169,59 +176,84 @@ func NewConnectionManager(bundle ConnectionManagerCreationBundle) *ConnectionMan
 		clusterIDMu:          &sync.Mutex{},
 		randGen:              rand.New(rand.NewSource(time.Now().Unix())),
 		memberAddCh:          make(chan types.UUID, 1024),
-		memberRemoveCh:       make(chan types.UUID, 1024),
+		memberRemoveCh:       make(chan *Connection, 1024),
+		doneCh:               make(chan struct{}),
+		startCh:              make(chan struct{}),
 	}
 	return manager
 }
 
 func (m *ConnectionManager) Start(ctx context.Context) error {
-	m.reset()
-	return m.start(ctx)
-}
-
-func (m *ConnectionManager) start(ctx context.Context) error {
-	m.logger.Trace(func() string { return "cluster.ConnectionManager.start" })
-	m.eventDispatcher.Subscribe(EventMembersAdded, event.DefaultSubscriptionID, m.handleInitialMembersAdded)
-	addr, err := m.tryConnectCluster(ctx)
+	addr, err := m.start(ctx)
 	if err != nil {
 		return err
 	}
-	// wait for initial member list
-	m.logger.Debug(func() string { return "cluster.ConnectionManager.start: waiting for the initial member list" })
-	select {
-	case <-ctx.Done():
-		return fmt.Errorf("getting initial member list from cluster: %w", ctx.Err())
-	case <-m.startCh:
-		break
-	case <-time.After(initialMembersTimeout):
-		return fmt.Errorf("timed out getting initial member list from cluster: %w", hzerrors.ErrIllegalState)
-	}
-	m.logger.Debug(func() string { return "cluster.ConnectionManager.start: received the initial member list" })
-	// check if cluster ID has changed after reconnection
-	var clusterIDChanged bool
-	m.clusterIDMu.Lock()
-	clusterIDChanged = m.prevClusterID != nil && m.prevClusterID != m.clusterID
-	m.clusterIDMu.Unlock()
-	if clusterIDChanged {
-		m.eventDispatcher.Publish(NewChangedCluster())
-	}
-	m.eventDispatcher.Publish(NewConnected(addr))
-	go m.heartbeat()
 	if m.smartRouting {
 		go m.syncConnections()
 	}
 	if m.logger.CanLogDebug() {
 		go m.logStatus()
 	}
-	atomic.StoreInt32(&m.state, ready)
 	m.eventDispatcher.Subscribe(EventConnectionClosed, event.DefaultSubscriptionID, m.handleConnectionClosed)
+	atomic.StoreInt32(&m.state, ready)
+	m.eventDispatcher.Publish(NewConnected(addr))
 	return nil
+}
+
+func (m *ConnectionManager) Restart(ctx context.Context) error {
+	if !atomic.CompareAndSwapInt32(&m.state, ready, restarting) {
+		return nil
+	}
+	m.startCh = make(chan struct{})
+	m.connMap.Reset()
+	m.clusterIDMu.Lock()
+	if m.clusterID != nil {
+		m.prevClusterID = m.clusterID
+	}
+	m.clusterID = nil
+	m.clusterIDMu.Unlock()
+	addr, err := m.start(ctx)
+	if err != nil {
+		return fmt.Errorf("restarting: %w", err)
+	}
+	// check if cluster ID has changed after reconnection
+	var clusterChanged bool
+	m.clusterIDMu.Lock()
+	clusterChanged = m.prevClusterID != nil && m.prevClusterID != m.clusterID
+	m.clusterIDMu.Unlock()
+	if clusterChanged {
+		m.eventDispatcher.Publish(NewChangedCluster())
+	}
+	atomic.CompareAndSwapInt32(&m.state, restarting, ready)
+	m.eventDispatcher.Publish(NewConnected(addr))
+	return nil
+}
+
+func (m *ConnectionManager) start(ctx context.Context) (pubcluster.Address, error) {
+	m.logger.Trace(func() string { return "cluster.ConnectionManager.start" })
+	m.eventDispatcher.Subscribe(EventMembersAdded, event.DefaultSubscriptionID, m.handleInitialMembersAdded)
+	addr, err := m.tryConnectCluster(ctx)
+	if err != nil {
+		return "", err
+	}
+	// wait for the initial member list
+	m.logger.Debug(func() string { return "cluster.ConnectionManager.start: waiting for the initial member list" })
+	select {
+	case <-ctx.Done():
+		return "", fmt.Errorf("getting initial member list from cluster: %w", ctx.Err())
+	case <-m.startCh:
+		break
+	case <-time.After(initialMembersTimeout):
+		return "", fmt.Errorf("timed out getting initial member list from cluster: %w", hzerrors.ErrIllegalState)
+	}
+	m.logger.Debug(func() string { return "cluster.ConnectionManager.start: received the initial member list" })
+	atomic.StoreInt32(&m.connectionState, connected)
+	return addr, nil
 }
 
 func (m *ConnectionManager) Stop() {
 	m.eventDispatcher.Unsubscribe(EventConnectionClosed, event.MakeSubscriptionID(m.handleConnectionClosed))
 	m.eventDispatcher.Unsubscribe(EventMembersAdded, event.MakeSubscriptionID(m.handleMembersAdded))
-	m.eventDispatcher.Unsubscribe(EventMembersRemoved, event.MakeSubscriptionID(m.handleMembersRemoved))
 	if !atomic.CompareAndSwapInt32(&m.state, ready, stopped) {
 		return
 	}
@@ -258,24 +290,20 @@ func (m *ConnectionManager) RandomConnection() *Connection {
 	return m.connMap.RandomConn()
 }
 
-func (m *ConnectionManager) reset() {
-	m.doneCh = make(chan struct{}, 1)
-	m.startCh = make(chan struct{}, 1)
-	m.clusterIDMu.Lock()
-	if m.clusterID != nil {
-		m.prevClusterID = m.clusterID
-	}
-	m.clusterID = nil
-	m.clusterIDMu.Unlock()
-	m.connMap.Reset()
+func (m *ConnectionManager) TryConnectCluster(ctx context.Context) (pubcluster.Address, error) {
+	return m.tryConnectCluster(ctx)
 }
 
 func (m *ConnectionManager) handleInitialMembersAdded(e event.Event) {
-	m.logger.Trace(func() string { return "connectionManager.handleInitialMembersAdded" })
-	m.handleMembersAdded(e)
+	if atomic.LoadInt32(&m.connectionState) != disconnected {
+		return
+	}
+	m.logger.Trace(func() string {
+		return "cluster.ConnectionManager.handleInitialMembersAdded"
+	})
 	m.eventDispatcher.Subscribe(EventMembersAdded, event.DefaultSubscriptionID, m.handleMembersAdded)
-	m.eventDispatcher.Subscribe(EventMembersRemoved, event.DefaultSubscriptionID, m.handleMembersRemoved)
 	m.eventDispatcher.Unsubscribe(EventMembersAdded, event.MakeSubscriptionID(m.handleInitialMembersAdded))
+	m.handleMembersAdded(e)
 	close(m.startCh)
 }
 
@@ -296,55 +324,20 @@ func (m *ConnectionManager) handleMembersAdded(event event.Event) {
 	m.logger.Warnf("connectionManager.handleMembersAdded: expected *MembersAdded event")
 }
 
-func (m *ConnectionManager) handleMembersRemoved(event event.Event) {
-	if e, ok := event.(*MembersRemoved); ok {
-		m.logger.Trace(func() string {
-			return fmt.Sprintf("connectionManager.handleMembersRemoved: %v", e.Members)
-		})
-		for _, member := range e.Members {
-			m.memberRemoveCh <- member.UUID
-		}
-		return
-	}
-	m.logger.Warnf("connectionManager.handleMembersRemoved: expected *MembersRemoved event")
-}
-
 func (m *ConnectionManager) handleConnectionClosed(event event.Event) {
 	if atomic.LoadInt32(&m.state) != ready {
 		return
 	}
-	e, ok := event.(*ConnectionClosed)
-	if !ok {
-		return
+	if e, ok := event.(*ConnectionClosed); ok {
+		m.memberRemoveCh <- e.Conn
 	}
-	conn := e.Conn
-	m.removeConnection(conn)
-	if m.connMap.Len() == 0 {
-		m.logger.Debug(func() string { return "cluster.ConnectionManager.handleConnectionClosed: no connections left" })
-		return
-	}
-	if err := e.Err; err != nil {
-		m.logger.Debug(func() string { return fmt.Sprintf("respawning connection, since: %s", err.Error()) })
-		uuid := conn.memberUUID
-		if uuid.Default() {
-			// this connection has no member UUID, must be the first connection
-			// try to get the member UUID for it
-			member := m.clusterService.GetMemberByAddress(conn.Endpoint())
-			if member == nil {
-				// this member does not belong to the cluster
-				return
-			}
-			uuid = member.UUID
-		}
-		m.memberAddCh <- conn.memberUUID
-		return
-	}
-	m.logger.Debug(func() string { return "not respawning connection, no errors" })
 }
 
 func (m *ConnectionManager) removeConnection(conn *Connection) {
 	if remaining := m.connMap.RemoveConnection(conn); remaining == 0 {
-		m.eventDispatcher.Publish(NewDisconnected())
+		if atomic.CompareAndSwapInt32(&m.connectionState, connected, disconnected) {
+			m.eventDispatcher.Publish(NewDisconnected())
+		}
 	}
 }
 
@@ -402,7 +395,7 @@ func (m *ConnectionManager) connectCluster(ctx context.Context, cluster *Candida
 	}
 	var initialAddr pubcluster.Address
 	for _, addr := range seedAddrs {
-		initialAddr, err = m.tryConnectAddress(ctx, addr, connectMember)
+		initialAddr, err = m.tryConnectAddress(ctx, addr, m.clusterConfig.Network.PortRange, connectMember)
 		if err != nil {
 			return "", err
 		}
@@ -503,7 +496,7 @@ func (m *ConnectionManager) processAuthenticationResult(conn *Connection, result
 		}
 
 		m.logger.Trace(func() string {
-			return fmt.Sprintf("connectionManager: checking the cluster: %v, current cluster: %v", newClusterID, m.clusterID)
+			return fmt.Sprintf("cluster.ConnectionManager: checking the cluster: %v, current cluster: %v", newClusterID, m.clusterID)
 		})
 		m.clusterIDMu.Lock()
 		// clusterID is nil only at the start of the client,
@@ -566,31 +559,6 @@ func (m *ConnectionManager) createAuthenticationRequest(clusterName string, cred
 	)
 }
 
-func (m *ConnectionManager) heartbeat() {
-	ticker := time.NewTicker(time.Duration(m.clusterConfig.HeartbeatInterval))
-	for {
-		select {
-		case <-m.doneCh:
-			ticker.Stop()
-			return
-		case <-ticker.C:
-			for _, conn := range m.ActiveConnections() {
-				m.sendHeartbeat(conn)
-			}
-		}
-	}
-}
-
-func (m *ConnectionManager) sendHeartbeat(conn *Connection) {
-	request := codec.EncodeClientPingRequest()
-	inv := m.invocationFactory.NewConnectionBoundInvocation(request, conn, nil)
-	select {
-	case m.requestCh <- inv:
-	case <-time.After(time.Duration(m.clusterConfig.HeartbeatInterval)):
-		return
-	}
-}
-
 func (m *ConnectionManager) logStatus() {
 	ticker := time.NewTicker(10 * time.Second)
 	for {
@@ -616,6 +584,7 @@ func (m *ConnectionManager) logStatus() {
 }
 
 func (m *ConnectionManager) syncConnections() {
+	ticker := time.NewTicker(1 * time.Second)
 	for {
 		select {
 		case <-m.doneCh:
@@ -625,12 +594,45 @@ func (m *ConnectionManager) syncConnections() {
 				return
 			}
 			m.checkAddConnection(context.Background(), uuid)
-			time.Sleep(100 * time.Second)
 		case uuid, ok := <-m.memberRemoveCh:
 			if !ok {
 				return
 			}
 			m.checkRemoveConnection(uuid)
+		case <-ticker.C:
+			m.syncMemberConnections()
+		}
+	}
+}
+
+func (m *ConnectionManager) syncMemberConnections() {
+	// add connections to missing members
+	for _, addr := range m.clusterService.MemberAddrs() {
+		if conn := m.connMap.GetConnectionForAddr(addr); conn == nil {
+			// there is no connection to addr
+			if member := m.clusterService.GetMemberByAddress(addr); member != nil {
+				m.logger.Trace(func() string {
+					return fmt.Sprintf("found missing connection to: %s", member.UUID)
+				})
+				m.memberAddCh <- member.UUID
+			}
+		}
+	}
+	// remove connections to non-existent members`
+	for _, conn := range m.connMap.Connections() {
+		var member *pubcluster.MemberInfo
+		var uuid = conn.memberUUID
+		if uuid.Default() {
+			// this is the very first connection, we don't know the corresponding member UUID
+			member = m.clusterService.GetMemberByAddress(conn.Endpoint())
+		} else {
+			member = m.clusterService.GetMemberByUUID(uuid)
+		}
+		if member == nil {
+			m.logger.Trace(func() string {
+				return fmt.Sprintf("found extra connection to: %s", conn)
+			})
+			m.memberRemoveCh <- conn
 		}
 	}
 }
@@ -652,26 +654,17 @@ func (m *ConnectionManager) checkAddConnection(ctx context.Context, uuid types.U
 			m.logger.Debug(func() string {
 				return fmt.Sprintf("could not connect to %s: %s", addr, err.Error())
 			})
-			// add the member back to the candidate list
-			// check if retryable
-			m.memberAddCh <- member.UUID
-			time.Sleep(1 * time.Millisecond)
+			// not adding the member back to the candidate list, it should be picked up by syncMemberConnections
 		}
 	}
 }
 
-func (m *ConnectionManager) checkRemoveConnection(uuid types.UUID) {
+func (m *ConnectionManager) checkRemoveConnection(conn *Connection) {
 	m.logger.Trace(func() string {
-		return fmt.Sprintf("cluster.ConnectionManager.checkAddConnection: %s", uuid.String())
+		return fmt.Sprintf("cluster.ConnectionManager.checkRemoveConnection: %d", conn.connectionID)
 	})
-	_, addr, ok := m.memberAndAddrFor(uuid)
-	if !ok {
-		return
-	}
-	if conn := m.connMap.GetConnectionForAddr(addr); conn != nil {
-		// there is a connection to addr
-		conn.close(nil)
-	}
+	conn.close(nil)
+	m.removeConnection(conn)
 }
 
 func (m *ConnectionManager) memberAndAddrFor(uuid types.UUID) (*pubcluster.MemberInfo, pubcluster.Address, bool) {
@@ -693,14 +686,14 @@ func (m *ConnectionManager) memberAndAddrFor(uuid types.UUID) (*pubcluster.Membe
 	return member, addr, true
 }
 
-func (m *ConnectionManager) tryConnectAddress(ctx context.Context, addr pubcluster.Address, conn connectMemberFunc) (pubcluster.Address, error) {
+func (m *ConnectionManager) tryConnectAddress(ctx context.Context, addr pubcluster.Address, pr pubcluster.PortRange, conn connectMemberFunc) (pubcluster.Address, error) {
 	host, port, err := internal.ParseAddr(addr.String())
 	if err != nil {
 		return "", err
 	}
 	var initialAddr pubcluster.Address
 	if port == 0 { // we need to try all addresses in port range
-		for _, currAddr := range util.GetAddresses(host, m.clusterConfig.Network.PortRange) {
+		for _, currAddr := range util.GetAddresses(host, pr) {
 			currentAddrRet, connErr := conn(ctx, m, currAddr, nil)
 			if connErr == nil {
 				initialAddr = currentAddrRet

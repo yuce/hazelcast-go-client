@@ -21,8 +21,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
 	hz "github.com/hazelcast/hazelcast-go-client"
 	"github.com/hazelcast/hazelcast-go-client/internal/it"
 )
@@ -45,7 +43,8 @@ func TestProxy_Destroy(t *testing.T) {
 }
 
 func retryResult(t *testing.T, redo bool, target bool) {
-	cluster := it.StartNewCluster(1)
+	clusterName := it.MakeClusterName("retry-result")
+	cluster := it.StartNewClusterWithOptions(clusterName, it.DefaultPort, 1)
 	config := cluster.DefaultConfig()
 	config.Cluster.RedoOperation = redo
 	ctx := context.Background()
@@ -63,9 +62,10 @@ func retryResult(t *testing.T, redo bool, target bool) {
 		}
 	}(okCh)
 	time.Sleep(1 * time.Second)
-	cluster = it.StartNewCluster(1)
+	cluster = it.StartNewClusterWithOptions(clusterName, it.DefaultPort, 1)
 	defer cluster.Shutdown()
-	time.Sleep(5 * time.Second)
-	ok := <-okCh
-	assert.Equal(t, target, ok)
+	it.Eventually(t, func() bool {
+		ok := <-okCh
+		return target == ok
+	})
 }

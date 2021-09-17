@@ -276,7 +276,7 @@ type TestCluster struct {
 }
 
 func StartNewCluster(memberCount int) *TestCluster {
-	return StartNewClusterWithOptions(DefaultClusterName, DefaultPort, memberCount)
+	return StartNewClusterWithOptions(MakeClusterName(DefaultClusterName), DefaultPort, memberCount)
 }
 
 func StartNewClusterWithOptions(clusterName string, port, memberCount int) *TestCluster {
@@ -316,6 +316,9 @@ func (c TestCluster) DefaultConfig() hz.Config {
 	if SSLEnabled() {
 		config.Cluster.Network.SSL.Enabled = true
 		config.Cluster.Network.SSL.SetTLSConfig(&tls.Config{InsecureSkipVerify: true})
+	}
+	if TraceLoggingEnabled() {
+		config.Logger.Level = logger.TraceLevel
 	}
 	return config
 }
@@ -434,4 +437,8 @@ func WaitEventuallyWithTimeout(t *testing.T, wg *sync.WaitGroup, timeout time.Du
 	case <-time.After(timeout):
 		t.FailNow()
 	}
+}
+
+func MakeClusterName(prefix string) string {
+	return fmt.Sprintf("%s-%d-%d", prefix, idGen.NextID(), rand.Int())
 }

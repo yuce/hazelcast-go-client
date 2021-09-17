@@ -57,7 +57,7 @@ func TestConnectionBoundInvocation_CanRetry(t *testing.T) {
 func TestMemberBoundInvocation_CanRetry(t *testing.T) {
 	msg := proto.NewClientMessage(proto.NewFrame(make([]byte, 64)))
 	mi := &pubcluster.MemberInfo{Address: "", UUID: types.NewUUID()}
-	inv := icluster.NewMemberBoundInvocation(msg, mi, time.Now().Add(10*time.Second), false)
+	inv := icluster.NewMemberBoundInvocation(msg, mi, 10*time.Second, false)
 	err := errors.New("foo")
 	targetDisconnectedErr := ihzerrors.NewTargetDisconnectedError("foo", nil)
 	targetNotMemberErr := ihzerrors.NewClientError("target not member", nil, hzerrors.ErrTargetNotMember)
@@ -67,7 +67,7 @@ func TestMemberBoundInvocation_CanRetry(t *testing.T) {
 			t.FailNow()
 		}
 	}
-	inv = icluster.NewMemberBoundInvocation(msg, mi, time.Now().Add(10*time.Second), true)
+	inv = icluster.NewMemberBoundInvocation(msg, mi, 10*time.Second, true)
 	if !assert.True(t, inv.CanRetry(targetDisconnectedErr)) {
 		t.FailNow()
 	}
@@ -81,7 +81,7 @@ func TestMemberBoundInvocation_CanRetry(t *testing.T) {
 	}
 	msg = proto.NewClientMessage(proto.NewFrame(make([]byte, 64)))
 	msg.SetRetryable(true)
-	inv = icluster.NewMemberBoundInvocation(msg, mi, time.Now().Add(10*time.Second), false)
+	inv = icluster.NewMemberBoundInvocation(msg, mi, 10*time.Second, false)
 	if !assert.True(t, inv.CanRetry(targetDisconnectedErr)) {
 		t.FailNow()
 	}
