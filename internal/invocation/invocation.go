@@ -35,6 +35,7 @@ var ErrResponseChannelClosed = errors.New("response channel closed")
 const (
 	fresh     = 0
 	completed = 1
+	sent      = 1
 )
 
 type Result interface {
@@ -52,6 +53,8 @@ type Invocation interface {
 	Address() pubcluster.Address
 	Close()
 	CanRetry(err error) bool
+	MarkSent()
+	Sent() bool
 }
 
 type Impl struct {
@@ -63,6 +66,7 @@ type Impl struct {
 	completed     int32
 	partitionID   int32
 	RedoOperation bool
+	sent          int32
 }
 
 func NewImpl(clientMessage *proto.ClientMessage, partitionID int32, address pubcluster.Address, timeout time.Duration, redoOperation bool) *Impl {
@@ -91,22 +95,26 @@ func (i *Impl) EventHandler() proto.ClientMessageHandler {
 }
 
 func (i *Impl) GetWithContext(ctx context.Context) (*proto.ClientMessage, error) {
-	select {
-	case response, ok := <-i.response:
-		if ok {
-			return i.unwrapResponse(response)
+	for {
+		select {
+		case response, ok := <-i.response:
+			if ok {
+				return i.unwrapResponse(response)
+			}
+			return nil, cb.WrapNonRetryableError(ErrResponseChannelClosed)
+		case <-ctx.Done():
+			err := ctx.Err()
+			if err != nil && !i.CanRetry(err) {
+				//i.Close()
+				err = cb.WrapNonRetryableError(err)
+			}
+			return nil, err
+		case <-time.After(i.timeout):
+			if !i.Sent() {
+				return nil, fmt.Errorf("invocation: %w", hzerrors.ErrOperationTimeout)
+			}
+			fmt.Printf("\n\nINV NOT SENT: %d\n\n", i.Request().CorrelationID())
 		}
-		return nil, cb.WrapNonRetryableError(ErrResponseChannelClosed)
-	case <-ctx.Done():
-		err := ctx.Err()
-		if err != nil && !i.CanRetry(err) {
-			i.Close()
-			err = cb.WrapNonRetryableError(err)
-		}
-		return nil, err
-	case <-time.After(i.timeout):
-		i.Close()
-		return nil, fmt.Errorf("invocation: %w", hzerrors.ErrOperationTimeout)
 	}
 }
 
@@ -120,6 +128,14 @@ func (i *Impl) Request() *proto.ClientMessage {
 
 func (i *Impl) Address() pubcluster.Address {
 	return i.address
+}
+
+func (i *Impl) MarkSent() {
+	atomic.StoreInt32(&i.sent, sent)
+}
+
+func (i *Impl) Sent() bool {
+	return atomic.LoadInt32(&i.sent) == sent
 }
 
 /*

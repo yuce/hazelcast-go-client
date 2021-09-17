@@ -61,11 +61,14 @@ func retryResult(t *testing.T, redo bool, target bool) {
 			ch <- true
 		}
 	}(okCh)
-	time.Sleep(1 * time.Second)
 	cluster = it.StartNewClusterWithOptions(clusterName, it.DefaultPort, 1)
 	defer cluster.Shutdown()
 	it.Eventually(t, func() bool {
-		ok := <-okCh
-		return target == ok
+		select {
+		case ok := <-okCh:
+			return target == ok
+		case <-time.After(100 * time.Millisecond):
+			return false
+		}
 	})
 }

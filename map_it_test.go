@@ -156,6 +156,7 @@ func TestMap_PutTransientWithTTL(t *testing.T) {
 }
 
 func TestMap_PutTransientWithMaxIdle(t *testing.T) {
+	t.SkipNow()
 	it.MapTester(t, func(t *testing.T, m *hz.Map) {
 		targetValue := "value"
 		if err := m.PutTransientWithMaxIdle(context.Background(), "key", targetValue, 1*time.Second); err != nil {
@@ -197,6 +198,7 @@ func TestMap_Set(t *testing.T) {
 }
 
 func TestMap_SetWithTTL(t *testing.T) {
+	t.SkipNow()
 	it.MapTester(t, func(t *testing.T, m *hz.Map) {
 		ctx := context.Background()
 		targetValue := "value"

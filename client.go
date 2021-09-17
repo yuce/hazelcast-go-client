@@ -266,7 +266,6 @@ func (c *Client) Shutdown(ctx context.Context) error {
 		c.statsService.Stop()
 	}
 	close(c.doneCh)
-	c.logger.Trace(func() string { return "closed restart channel" })
 	atomic.StoreInt32(&c.state, stopped)
 	c.eventDispatcher.Publish(newLifecycleStateChanged(LifecycleStateShutDown))
 	// wait for the shut down event to be dispatched

@@ -86,9 +86,7 @@ loop:
 	}
 	// remove invocations
 	for _, inv := range s.invocations {
-		if !inv.Completed() {
-			inv.Close()
-		}
+		inv.Close()
 	}
 	s.invocations = nil
 }

@@ -438,7 +438,7 @@ func (m *ConnectionManager) maybeCreateConnection(ctx context.Context, addr pubc
 func (m *ConnectionManager) createDefaultConnection(addr pubcluster.Address) *Connection {
 	conn := &Connection{
 		responseCh:      m.responseCh,
-		pending:         make(chan *proto.ClientMessage, 1024),
+		pending:         make(chan invocation.Invocation, 1024),
 		doneCh:          make(chan struct{}),
 		connectionID:    m.NextConnectionID(),
 		eventDispatcher: m.eventDispatcher,

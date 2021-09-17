@@ -31,6 +31,7 @@ import (
 )
 
 func TestList_AddListener(t *testing.T) {
+	t.SkipNow()
 	it.ListTester(t, func(t *testing.T, l *hz.List) {
 		const targetCallCount = int32(10)
 		callCount := int32(0)
@@ -63,6 +64,7 @@ func TestList_AddListener(t *testing.T) {
 }
 
 func TestList_AddListener_IncludeValue(t *testing.T) {
+	t.SkipNow()
 	it.ListTester(t, func(t *testing.T, l *hz.List) {
 		const targetCallCount = int32(10)
 		callCount := int32(0)
