@@ -39,7 +39,7 @@ import (
 	"github.com/hazelcast/hazelcast-go-client/types"
 )
 
-var idGen = proxy.ReferenceIDGenerator{}
+var superIDGen = proxy.ReferenceIDGenerator{}
 
 func TestClientLifecycleEvents(t *testing.T) {
 	receivedStates := []hz.LifecycleState{}
@@ -525,7 +525,7 @@ func TestClientFixConnection(t *testing.T) {
 	const memberCount = 3
 	addedCount := int64(0)
 	ctx := context.Background()
-	id := idGen.NextID()
+	id := superIDGen.NextID()
 	clusterName := fmt.Sprintf("600-cluster-%d", id)
 	log.Println("Cluster name:", clusterName)
 	port := 20701 + id*10
