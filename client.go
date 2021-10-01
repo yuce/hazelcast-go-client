@@ -91,6 +91,8 @@ type Client struct {
 	refIDGen                *iproxy.ReferenceIDGenerator
 	lifecyleListenerMap     map[types.UUID]int64
 	lifecyleListenerMapMu   *sync.Mutex
+	restartCh               chan struct{}
+	doneCh                  chan struct{}
 	name                    string
 	state                   int32
 }
@@ -130,10 +132,13 @@ func newClient(config Config) (*Client, error) {
 		lifecyleListenerMapMu:   &sync.Mutex{},
 		membershipListenerMap:   map[types.UUID]int64{},
 		membershipListenerMapMu: &sync.Mutex{},
+		restartCh:               make(chan struct{}),
+		doneCh:                  make(chan struct{}),
 	}
 	c.addConfigEvents(&config)
 	c.subscribeUserEvents()
 	c.createComponents(&config)
+	go c.checkRestart()
 	return c, nil
 }
 
@@ -527,4 +532,39 @@ func addrProviderTranslator(config *cluster.Config, logger ilogger.Logger) (iclu
 		return pr, icluster.NewDefaultPublicAddressTranslator()
 	}
 	return pr, icluster.NewDefaultAddressTranslator()
+}
+
+func (c *Client) checkRestart() {
+	for {
+		select {
+		case <-c.doneCh:
+			return
+		case _, ok := <-c.restartCh:
+			if ok {
+				c.restart()
+			}
+		}
+	}
+}
+
+func (c *Client) restart() {
+	if atomic.LoadInt32(&c.state) != ready {
+		return
+	}
+	ctx := context.Background()
+	if c.clusterConfig.ConnectionStrategy.ReconnectMode == cluster.ReconnectModeOff {
+		c.logger.Debug(func() string { return "reconnect mode is off, shutting down" })
+		// ignoring the error on Shutdown
+		_ = c.Shutdown(ctx)
+		return
+	}
+	c.logger.Debug(func() string { return "cluster disconnected, rebooting" })
+	// try to reboot cluster connection
+	c.clusterService.Reset()
+	c.partitionService.Reset()
+	if err := c.connectionManager.Restart(context.Background()); err != nil {
+		c.logger.Errorf("cannot reconnect to cluster, shutting down: %w", err)
+		// ignoring the error on Shutdown
+		_ = c.Shutdown(ctx)
+	}
 }
