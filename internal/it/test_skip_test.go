@@ -3,8 +3,9 @@ package it
 import (
 	"testing"
 
-	"github.com/hazelcast/hazelcast-go-client/internal"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/hazelcast/hazelcast-go-client/internal"
 )
 
 func TestSkipIf(t *testing.T) {
@@ -18,6 +19,7 @@ func TestSkipIf(t *testing.T) {
 		// Check parsing
 		{name: "incorrect version format", conditions: "version < 1.0.0", expectPanic: true},
 		{name: "incorrect os format", conditions: "os windows", expectPanic: true},
+		{name: "incorrect arch format", conditions: "arch 386", expectPanic: true},
 		{name: "incorrect enterprise format", conditions: "enterprise = os", expectPanic: true},
 		{name: "empty condition #1", conditions: "enterprise = os, , ver > 0", expectPanic: true},
 		{name: "empty condition #2", conditions: "enterprise = os,, ver > 0", expectPanic: true},
@@ -25,6 +27,10 @@ func TestSkipIf(t *testing.T) {
 		// Check OS based on non-existing OS
 		{name: "skip if not non-existing OS", conditions: "os != non-existent", expectSkip: true},
 		{name: "skip if non-existing OS", conditions: "os = non-existent"},
+
+		// Check OS based on non-existing Arch
+		{name: "skip if not non-existing Arch", conditions: "arch != non-existent", expectSkip: true},
+		{name: "skip if non-existing Arch", conditions: "arch = non-existent"},
 
 		// Check version compared to 0
 		{name: "skip version > 0.0.0", conditions: "ver > 0.0.0", expectSkip: true},

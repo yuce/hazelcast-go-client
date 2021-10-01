@@ -15,6 +15,7 @@ const (
 	skipHzVersion     = "hz"
 	skipClientVersion = "ver"
 	skipOS            = "os"
+	skipArch          = "arch"
 	skipEnterprise    = "enterprise"
 	skipOSS           = "oss"
 	enterpriseKey     = "HAZELCAST_ENTERPRISE_KEY"
@@ -25,6 +26,7 @@ const (
 // "hz": Hazelcast version
 // "ver": go client version
 // "os": value of runtime.GOOS
+// "arch": value of runtime.GOARCH
 // "enterprise"/"oss": presence of enterprise key environment variable
 // Example: SkipIf(t, "ver > 1.1, hz = 5")
 func SkipIf(t *testing.T, conditions string) {
@@ -55,6 +57,9 @@ func checkCondition(condition string) bool {
 	case skipOS:
 		validateLength(parts, 3, condition, "os = windows")
 		return checkOS(parts[1], parts[2])
+	case skipArch:
+		validateLength(parts, 3, condition, "arch = 386")
+		return checkArch(parts[1], parts[2])
 	case skipEnterprise:
 		validateLength(parts, 1, condition, "enterprise")
 		return enterprise()
@@ -137,6 +142,17 @@ func checkOS(operator, value string) bool {
 		return runtime.GOOS != value
 	default:
 		panic(fmt.Errorf(`unexpected test skip operator "%s" in "%s" condition`, operator, skipOS))
+	}
+}
+
+func checkArch(operator, value string) bool {
+	switch operator {
+	case "=":
+		return runtime.GOARCH == value
+	case "!=":
+		return runtime.GOARCH != value
+	default:
+		panic(fmt.Errorf(`unexpected test skip operator "%s" in "%s" condition`, operator, skipArch))
 	}
 }
 
