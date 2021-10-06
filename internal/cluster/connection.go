@@ -36,6 +36,7 @@ import (
 	"github.com/hazelcast/hazelcast-go-client/internal/proto"
 	"github.com/hazelcast/hazelcast-go-client/internal/proto/codec"
 	"github.com/hazelcast/hazelcast-go-client/internal/util/versionutil"
+	"github.com/hazelcast/hazelcast-go-client/types"
 )
 
 const (
@@ -66,6 +67,7 @@ type Connection struct {
 	invocationService         *invocation.Service
 	doneCh                    chan struct{}
 	connectedServerVersionStr string
+	memberUUID                types.UUID
 	connectionID              int64
 	connectedServerVersion    int32
 	status                    int32
