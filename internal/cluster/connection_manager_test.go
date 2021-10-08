@@ -5,9 +5,10 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	pubcluster "github.com/hazelcast/hazelcast-go-client/cluster"
 	"github.com/hazelcast/hazelcast-go-client/internal"
-	"github.com/stretchr/testify/assert"
 )
 
 type CheckedAddressHelper struct {
@@ -93,7 +94,7 @@ func tryConnectAddressTest(checkedAddresses []CheckedAddressHelper, inputAddress
 		return connMemberCounter, "", err
 	}
 	resultAddr, err := tryConnectAddress(context.TODO(), nil, portRange, pubcluster.NewAddress(host, int32(port)),
-		func(ctx context.Context, m *ConnectionManager, currAddr pubcluster.Address) (pubcluster.Address, error) {
+		func(ctx context.Context, m *ConnectionManager, currAddr pubcluster.Address, mem *pubcluster.MemberInfo) (pubcluster.Address, error) {
 			connMemberCounter++
 			for _, checkedAddr := range checkedAddresses {
 				if currAddr == checkedAddr.address {

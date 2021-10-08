@@ -68,6 +68,10 @@ func (u UUID) Default() bool {
 	return u.mostSigBits == 0 && u.leastSigBits == 0
 }
 
+func (u UUID) Equal(b UUID) bool {
+	return u.mostSigBits == b.mostSigBits && u.leastSigBits == b.leastSigBits
+}
+
 func (u UUID) ExtractInto(b []byte) {
 	if len(b) < 16 {
 		panic("uuid: slice of size 16 is required")

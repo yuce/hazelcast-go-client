@@ -92,6 +92,10 @@ func (s *Service) GetMemberByUUID(uuid types.UUID) *pubcluster.MemberInfo {
 	return s.membersMap.Find(uuid)
 }
 
+func (s *Service) GetMemberByAddress(addr pubcluster.Address) *pubcluster.MemberInfo {
+	return s.membersMap.FindByAddr(addr)
+}
+
 func (s *Service) MemberAddrs() []pubcluster.Address {
 	return s.membersMap.MemberAddrs()
 }
@@ -227,6 +231,14 @@ func (m *membersMap) Update(members []pubcluster.MemberInfo, version int32) (add
 
 func (m *membersMap) Find(uuid types.UUID) *pubcluster.MemberInfo {
 	m.membersMu.RLock()
+	member := m.members[uuid]
+	m.membersMu.RUnlock()
+	return member
+}
+
+func (m *membersMap) FindByAddr(addr pubcluster.Address) *pubcluster.MemberInfo {
+	m.membersMu.RLock()
+	uuid := m.addrToMemberUUID[addr]
 	member := m.members[uuid]
 	m.membersMu.RUnlock()
 	return member

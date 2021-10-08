@@ -109,15 +109,15 @@ func (s LifecycleState) String() string {
 	case LifecycleStateStarted:
 		return "started"
 	case LifecycleStateShuttingDown:
-		return "shutting down"
+		return "shutting_down"
 	case LifecycleStateShutDown:
 		return "shutdown"
 	case LifecycleStateConnected:
-		return "client connected"
+		return "client_connected"
 	case LifecycleStateDisconnected:
-		return "client disconnected"
+		return "client_disconnected"
 	case LifecycleStateChangedCluster:
-		return "changed cluster"
+		return "changed_cluster"
 	default:
 		return "UNKNOWN"
 	}

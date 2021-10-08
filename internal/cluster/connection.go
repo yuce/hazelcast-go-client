@@ -63,7 +63,7 @@ type Connection struct {
 	lastRead                  atomic.Value
 	clusterConfig             *pubcluster.Config
 	eventDispatcher           *event.DispatchService
-	pending                   chan *proto.ClientMessage
+	pending                   chan invocation.Invocation
 	invocationService         *invocation.Service
 	doneCh                    chan struct{}
 	connectedServerVersionStr string
@@ -155,11 +155,12 @@ func (c *Connection) isAlive() bool {
 func (c *Connection) socketWriteLoop() {
 	for {
 		select {
-		case request, ok := <-c.pending:
+		case inv, ok := <-c.pending:
 			if !ok {
 				return
 			}
-			err := c.write(request)
+			req := inv.Request()
+			err := c.write(req)
 			// Note: Go lang spec guarantees that it's safe to call len()
 			// on any number of goroutines without further synchronization.
 			// See: https://golang.org/ref/spec#Channel_types
@@ -168,10 +169,10 @@ func (c *Connection) socketWriteLoop() {
 				err = c.bWriter.Flush()
 			}
 			if err != nil {
-				c.logger.Errorf("write error: %w", err)
-				request = request.Copy()
-				request.Err = ihzerrors.NewIOError("writing message", err)
-				if respErr := c.invocationService.WriteResponse(request); respErr != nil {
+				c.logger.Errorf("writing: %w", err)
+				req = req.Copy()
+				req.Err = ihzerrors.NewIOError("writing message", err)
+				if respErr := c.invocationService.WriteResponse(req); respErr != nil {
 					c.logger.Debug(func() string {
 						return fmt.Sprintf("sending response: %s", err.Error())
 					})
@@ -213,6 +214,7 @@ func (c *Connection) socketReadLoop() {
 		if n == 0 {
 			continue
 		}
+		c.lastRead.Store(time.Now())
 		clientMessageReader.Append(buf[:n])
 		for {
 			clientMessage := clientMessageReader.Read()
@@ -247,7 +249,7 @@ func (c *Connection) send(inv invocation.Invocation) bool {
 	select {
 	case <-c.doneCh:
 		return false
-	case c.pending <- inv.Request():
+	case c.pending <- inv:
 		//inv.StoreSentConnection(c)
 		return true
 	}
