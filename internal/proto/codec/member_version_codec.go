@@ -27,23 +27,6 @@ const (
 	MemberVersionCodecPatchInitialFrameSize = MemberVersionCodecPatchFieldOffset + proto.ByteSizeInBytes
 )
 
-/*
-type memberversionCodec struct {}
-
-var MemberVersionCodec memberversionCodec
-*/
-
-func EncodeMemberVersion(clientMessage *proto.ClientMessage, memberVersion pubcluster.MemberVersion) {
-	clientMessage.AddFrame(proto.BeginFrame.Copy())
-	initialFrame := proto.NewFrame(make([]byte, MemberVersionCodecPatchInitialFrameSize))
-	FixSizedTypesCodec.EncodeByte(initialFrame.Content, MemberVersionCodecMajorFieldOffset, memberVersion.Major)
-	FixSizedTypesCodec.EncodeByte(initialFrame.Content, MemberVersionCodecMinorFieldOffset, memberVersion.Minor)
-	FixSizedTypesCodec.EncodeByte(initialFrame.Content, MemberVersionCodecPatchFieldOffset, memberVersion.Patch)
-	clientMessage.AddFrame(initialFrame)
-
-	clientMessage.AddFrame(proto.EndFrame.Copy())
-}
-
 func DecodeMemberVersion(frameIterator *proto.ForwardFrameIterator) pubcluster.MemberVersion {
 	// begin frame
 	frameIterator.Next()

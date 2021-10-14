@@ -537,7 +537,28 @@ func TestMap_Flush(t *testing.T) {
 	})
 }
 
-func TestMap_LoadAllWithoutReplacing(t *testing.T) {
+func TestMap_LoadAllWithoutReplacing_AllKeys(t *testing.T) {
+	makeMapName := func() string {
+		return "test-map"
+	}
+	it.MapTesterWithConfigAndName(t, makeMapName, nil, func(t *testing.T, m *hz.Map) {
+		putSampleKeyValues(m, 2)
+		it.Must(m.EvictAll(context.Background()))
+		it.Must(m.PutTransient(context.Background(), "k0", "new-v0"))
+		it.Must(m.PutTransient(context.Background(), "k1", "new-v1"))
+		it.Must(m.LoadAllWithoutReplacing(context.Background()))
+		targetEntrySet := []types.Entry{
+			{Key: "k0", Value: "new-v0"},
+			{Key: "k1", Value: "new-v1"},
+		}
+		entrySet := it.MustValue(m.GetAll(context.Background(), "k0", "k1")).([]types.Entry)
+		if !entriesEqualUnordered(targetEntrySet, entrySet) {
+			t.Fatalf("target %#v != %#v", targetEntrySet, entrySet)
+		}
+	})
+}
+
+func TestMap_LoadAllWithoutReplacing_SpecifiedKeys(t *testing.T) {
 	makeMapName := func() string {
 		return "test-map"
 	}

@@ -26,27 +26,6 @@ const (
 	MemberInfoCodecLiteMemberInitialFrameSize = MemberInfoCodecLiteMemberFieldOffset + proto.BooleanSizeInBytes
 )
 
-/*
-type memberinfoCodec struct {}
-
-var MemberInfoCodec memberinfoCodec
-*/
-
-func EncodeMemberInfo(clientMessage *proto.ClientMessage, memberInfo cluster.MemberInfo) {
-	clientMessage.AddFrame(proto.BeginFrame.Copy())
-	initialFrame := proto.NewFrame(make([]byte, MemberInfoCodecLiteMemberInitialFrameSize))
-	FixSizedTypesCodec.EncodeUUID(initialFrame.Content, MemberInfoCodecUuidFieldOffset, memberInfo.UUID)
-	FixSizedTypesCodec.EncodeBoolean(initialFrame.Content, MemberInfoCodecLiteMemberFieldOffset, memberInfo.LiteMember)
-	clientMessage.AddFrame(initialFrame)
-
-	EncodeAddress(clientMessage, memberInfo.Address)
-	EncodeMapForStringAndString(clientMessage, memberInfo.Attributes)
-	EncodeMemberVersion(clientMessage, memberInfo.Version)
-	EncodeMapForEndpointQualifierAndAddress(clientMessage, memberInfo.AddressMap)
-
-	clientMessage.AddFrame(proto.EndFrame.Copy())
-}
-
 func DecodeMemberInfo(frameIterator *proto.ForwardFrameIterator) cluster.MemberInfo {
 	// begin frame
 	frameIterator.Next()

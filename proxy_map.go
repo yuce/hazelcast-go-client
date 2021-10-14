@@ -517,18 +517,12 @@ func (m *Map) IsLocked(ctx context.Context, key interface{}) (bool, error) {
 
 // LoadAllWithoutReplacing loads all keys from the store at server side or loads the given keys if provided.
 func (m *Map) LoadAllWithoutReplacing(ctx context.Context, keys ...interface{}) error {
-	if len(keys) == 0 {
-		return nil
-	}
 	return m.loadAll(ctx, false, keys...)
 }
 
 // LoadAllReplacing loads all keys from the store at server side or loads the given keys if provided.
 // Replaces existing keys.
 func (m *Map) LoadAllReplacing(ctx context.Context, keys ...interface{}) error {
-	if len(keys) == 0 {
-		return nil
-	}
 	return m.loadAll(ctx, true, keys...)
 }
 
