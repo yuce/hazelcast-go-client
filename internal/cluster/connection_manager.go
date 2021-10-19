@@ -131,6 +131,7 @@ type ConnectionManager struct {
 	clientUUID           types.UUID
 	state                int32
 	smartRouting         bool
+	syncInProgress       int32
 }
 
 func NewConnectionManager(bundle ConnectionManagerCreationBundle) *ConnectionManager {
@@ -197,12 +198,17 @@ func (m *ConnectionManager) startSmart(ctx context.Context) (pubcluster.Address,
 	ch := make(chan struct{})
 	once := &sync.Once{}
 	m.eventDispatcher.Subscribe(EventMembersAdded, event.MakeSubscriptionID(m.handleMembersAdded), func(e event.Event) {
-		m.handleMembersAdded(e)
+		//m.handleMembersAdded(e)
 		once.Do(func() {
+			m.eventDispatcher.Unsubscribe(EventMembersAdded, event.MakeSubscriptionID(m.handleMembersAdded))
+			m.withDone(context.Background(), func(ctx context.Context) {
+				ms := m.clusterService.MemberUUIDAddrs()
+				m.connectMissingMembers(ctx, ms)
+			})
 			close(ch)
 		})
 	})
-	m.eventDispatcher.Subscribe(EventMembersRemoved, event.MakeSubscriptionID(m.handleMembersRemoved), m.handleMembersRemoved)
+	//m.eventDispatcher.Subscribe(EventMembersRemoved, event.MakeSubscriptionID(m.handleMembersRemoved), m.handleMembersRemoved)
 	addr, err := m.tryConnectCluster(ctx)
 	if err != nil {
 		return "", err
@@ -530,11 +536,15 @@ func (m *ConnectionManager) periodicallySyncMemberConnections() {
 }
 
 func (m *ConnectionManager) syncMemberConnections(ctx context.Context) {
+	if !atomic.CompareAndSwapInt32(&m.syncInProgress, 0, 1) {
+		return
+	}
 	m.withDone(ctx, func(ctx context.Context) {
 		ms := m.clusterService.MemberUUIDAddrs()
 		m.connectMissingMembers(ctx, ms)
 		m.removeNonexistentMembers(ctx, ms)
 	})
+	atomic.StoreInt32(&m.syncInProgress, 0)
 }
 
 func (m *ConnectionManager) connectMissingMembers(ctx context.Context, ms map[types.UUID]pubcluster.Address) {

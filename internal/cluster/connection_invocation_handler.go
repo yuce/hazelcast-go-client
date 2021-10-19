@@ -140,10 +140,9 @@ func (h *ConnectionInvocationHandler) sendToMember(inv invocation.Invocation, uu
 }
 
 func (h *ConnectionInvocationHandler) sendToRandomAddress(inv invocation.Invocation) (int64, error) {
-	if conn := h.connectionManager.RandomConnection(); conn == nil {
-		// TODO: use correct error type
+	conn := h.connectionManager.RandomConnection()
+	if conn == nil {
 		return 0, ihzerrors.NewIOError("no connection found", nil)
-	} else {
-		return h.sendToConnection(inv, conn)
 	}
+	return h.sendToConnection(inv, conn)
 }

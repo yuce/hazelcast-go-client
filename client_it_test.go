@@ -595,6 +595,7 @@ func TestInvocationTimeout(t *testing.T) {
 	})
 }
 
+/*
 func TestClientStartShutdownMemoryLeak(t *testing.T) {
 	clientTester(t, func(t *testing.T, smart bool) {
 		tc := it.StartNewClusterWithOptions("start-shutdown-memory-leak", 42701, it.MemberCount())
@@ -624,6 +625,40 @@ func TestClientStartShutdownMemoryLeak(t *testing.T) {
 			if m.Alloc > base && m.Alloc-base > limit {
 				t.Fatalf("memory allocation: %d > %d (iteration: %d)", m.Alloc-base, limit, i)
 			}
+		}
+	})
+}
+*/
+
+func TestClientStartShutdownMemoryLeak(t *testing.T) {
+	clientTester(t, func(t *testing.T, smart bool) {
+		tc := it.StartNewClusterWithOptions("start-shutdown-memory-leak", 42701, it.MemberCount())
+		defer tc.Shutdown()
+		config := tc.DefaultConfig()
+		if it.TraceLoggingEnabled() {
+			config.Logger.Level = logger.TraceLevel
+		}
+		config.Cluster.Unisocket = !smart
+		ctx := context.Background()
+		var maxAlloc uint64
+		var m runtime.MemStats
+		for i := 0; i < 10_000; i++ {
+			client, err := hz.StartNewClientWithConfig(ctx, config)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := client.Shutdown(ctx); err != nil {
+				t.Fatal(err)
+			}
+			runtime.ReadMemStats(&m)
+			if m.Alloc > maxAlloc {
+				maxAlloc = m.Alloc
+			}
+			fmt.Println(maxAlloc, m.Alloc)
+		}
+		const allocLimit = 6 * 1024 * 1024 // 4MB
+		if maxAlloc > allocLimit {
+			t.Fatalf("memory allocation: %d > %d", maxAlloc, allocLimit)
 		}
 	})
 }
