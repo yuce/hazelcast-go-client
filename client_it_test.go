@@ -605,13 +605,12 @@ func TestClientStartShutdownMemoryLeak(t *testing.T) {
 		if it.TraceLoggingEnabled() {
 			config.Logger.Level = logger.TraceLevel
 		}
-		if it.NonSmartEnabled() {
-			config.Cluster.Unisocket = true
-		}
+		config.Cluster.Unisocket = !smart
 		ctx := context.Background()
-		var maxAlloc uint64
+		var max uint64
 		var m runtime.MemStats
-		for i := 0; i < 100; i++ {
+		const limit = 8 * 1024 * 1024 // 8 MB
+		for i := 0; i < 10_000; i++ {
 			client, err := hz.StartNewClientWithConfig(ctx, config)
 			if err != nil {
 				t.Fatal(err)
@@ -620,13 +619,13 @@ func TestClientStartShutdownMemoryLeak(t *testing.T) {
 				t.Fatal(err)
 			}
 			runtime.ReadMemStats(&m)
-			if m.Alloc > maxAlloc {
-				maxAlloc = m.Alloc
+			if m.Alloc > max {
+				max = m.Alloc
 			}
-		}
-		const allocLimit = 6 * 1024 * 1024 // 4MB
-		if maxAlloc > allocLimit {
-			t.Fatalf("memory allocation: %d > %d", maxAlloc, allocLimit)
+			t.Logf("iteration: %d, max: %d", i, max)
+			if max > limit {
+				t.Fatalf("memory allocation: %d > %d", max, limit)
+			}
 		}
 	})
 }
