@@ -299,7 +299,9 @@ func (m *ConnectionManager) GetConnectionForPartition(partitionID int32) *Connec
 }
 
 func (m *ConnectionManager) ActiveConnections() []*Connection {
-	return m.connMap.ActiveConnections()
+	conns := m.connMap.ActiveConnections()
+	// remove any connections which are not current members
+	return FilterConns(conns, m.clusterService.MemberUUIDSet())
 }
 
 func (m *ConnectionManager) RandomConnection() *Connection {
@@ -846,4 +848,52 @@ func EnumerateAddresses(host string, portRange pubcluster.PortRange) []pubcluste
 		addrs = append(addrs, pubcluster.NewAddress(host, int32(i)))
 	}
 	return addrs
+}
+
+// FilterConns removes connections which do not correspond to a member.
+// Moodifies conns slice.
+// The order of connections in conns may change.
+func FilterConns(conns []*Connection, uuids map[types.UUID]struct{}) []*Connection {
+	/*
+			this function efficiently removes non-member connections, by moving non-members to the end of the slice and finally returning a smaller slice which does not contain the non-members part.
+			Example:
+			M: member
+			X: non-member
+			i = 0, r = 0
+			       v (i)
+			cs = [ M X X M M ]
+			               ^ (len(cs)-1-r)
+			i = 1, r = 0
+		             v (i)
+			cs = [ M X X M M ]
+						   ^ (len(cs)-1-r)
+			swap:
+			cs = [ M M X M X ]
+
+			i = 1, r = 1
+					 v (i)
+			cs = [ M M X M X ]
+			             ^ (len(cs)-1-r)
+			i = 2, r = 1
+				       v (i)
+			cs = [ M M X M X ]
+			             ^ (len(cs)-1-r)
+			swap:
+			cs = [ M M M X X ]
+	*/
+	var i, r int
+	for {
+		if i >= len(conns)-r {
+			break
+		}
+		conn := conns[i]
+		if _, found := uuids[conn.memberUUID]; !found {
+			// this connection does not correspond to a member, so remove it.
+			conns[i], conns[len(conns)-1-r] = conns[len(conns)-1-r], conns[i]
+			r++
+			continue
+		}
+		i++
+	}
+	return conns[:len(conns)-r]
 }

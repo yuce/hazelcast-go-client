@@ -96,6 +96,10 @@ func (s *Service) OrderedMembers() []pubcluster.MemberInfo {
 	return s.membersMap.OrderedMembers()
 }
 
+func (s *Service) MemberUUIDSet() map[types.UUID]struct{} {
+	return s.membersMap.MemberUUIDSet()
+}
+
 func (s *Service) RefreshedSeedAddrs(clusterCtx *CandidateCluster) ([]pubcluster.Address, error) {
 	s.membersMap.reset()
 	addrSet := NewAddrSet()
@@ -240,6 +244,16 @@ func (m *membersMap) OrderedMembers() []pubcluster.MemberInfo {
 	copy(members, m.orderedMembers)
 	m.membersMu.Unlock()
 	return members
+}
+
+func (m *membersMap) MemberUUIDSet() map[types.UUID]struct{} {
+	m.membersMu.Lock()
+	uuids := make(map[types.UUID]struct{}, len(m.members))
+	for uuid := range m.members {
+		uuids[uuid] = struct{}{}
+	}
+	m.membersMu.Unlock()
+	return uuids
 }
 
 // addMember adds the given memberinfo if it doesn't already exist and returns true in that case.
