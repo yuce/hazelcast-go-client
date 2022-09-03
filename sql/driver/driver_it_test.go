@@ -606,7 +606,9 @@ func TestConcurrentQueries(t *testing.T) {
 }
 
 func TestClusterShutdownWithCancelOnFetchPage(t *testing.T) {
-	tc := it.StartNewClusterWithConfig(1, it.SQLXMLConfig(t.Name(), "localhost", 60001), 60001)
+	port := it.NextPort()
+	clsCfg := it.SQLXMLConfig(t.Name(), "localhost", port)
+	tc := it.StartNewClusterWithConfig(1, clsCfg, port)
 	defer tc.Shutdown()
 	db := driver.Open(tc.DefaultConfigWithNoSSL())
 	defer db.Close()
