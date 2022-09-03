@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2021, Hazelcast, Inc. All Rights Reserved.
+ * Copyright (c) 2008-2022, Hazelcast, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"sync/atomic"
+	"time"
 
 	icluster "github.com/hazelcast/hazelcast-go-client/internal/cluster"
 	itype "github.com/hazelcast/hazelcast-go-client/internal/sql/types"
@@ -98,7 +99,9 @@ func (r *QueryResult) Len() int {
 // It can be safely called more than once and it is concurrency-safe.
 // It implements database/sql/Rows interface.
 func (r *QueryResult) Close() error {
-	return r.closeQuery()
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	return r.closeQuery(ctx)
 }
 
 // Next requests the next batch of rows from the member.
@@ -132,10 +135,10 @@ func (r *QueryResult) Next(dest []driver.Value) error {
 	return nil
 }
 
-func (r *QueryResult) closeQuery() error {
+func (r *QueryResult) closeQuery(ctx context.Context) error {
 	if atomic.CompareAndSwapInt32(&r.state, open, closed) {
 		close(r.doneCh)
-		if err := r.ss.closeQuery(context.Background(), r.queryID, r.conn); err != nil {
+		if err := r.ss.closeQuery(ctx, r.queryID, r.conn); err != nil {
 			return err
 		}
 	}
