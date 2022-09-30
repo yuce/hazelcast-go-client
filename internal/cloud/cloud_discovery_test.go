@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2021, Hazelcast, Inc. All Rights Reserved.
+ * Copyright (c) 2008-2022, Hazelcast, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -98,7 +98,7 @@ func TestTranslateAddrs(t *testing.T) {
 func TestMakeCoordinatorURL(t *testing.T) {
 	os.Setenv(envCoordinatorBaseURL, "")
 	url := makeCoordinatorURL("TOK")
-	target := "https://coordinator.hazelcast.cloud/cluster/discovery?token=TOK"
+	target := "https://api.viridian.hazelcast.com/cluster/discovery?token=TOK"
 	assert.Equal(t, target, url)
 	if err := os.Setenv(envCoordinatorBaseURL, "http://test.dev"); err != nil {
 		t.Fatal(err)
