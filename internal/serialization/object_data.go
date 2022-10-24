@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2021, Hazelcast, Inc. All Rights Reserved.
+ * Copyright (c) 2008-2022, Hazelcast, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -291,17 +291,21 @@ func (o *ObjectDataOutput) writeStringBytes(rv []rune) {
 	o.position += int32(runeCount)
 }
 
+type ObjectReader interface {
+	ReadObject(input serialization.DataInput) interface{}
+}
+
 //// ObjectDataInput ////
 
 type ObjectDataInput struct {
 	bo       binary.ByteOrder
-	service  *Service
+	service  ObjectReader
 	buffer   []byte
 	offset   int32
 	position int32
 }
 
-func NewObjectDataInput(buffer []byte, offset int32, service *Service, bigEndian bool) *ObjectDataInput {
+func NewObjectDataInput(buffer []byte, offset int32, service ObjectReader, bigEndian bool) *ObjectDataInput {
 	var bo binary.ByteOrder = binary.LittleEndian
 	if bigEndian {
 		bo = binary.BigEndian

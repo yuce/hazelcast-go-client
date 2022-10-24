@@ -215,3 +215,11 @@ const (
 	BackupEventFlag                      = proto.BackupEventFlag
 	SizeOfFrameLengthAndFlags            = proto.SizeOfFrameLengthAndFlags
 )
+
+type ObjectDataInput = serialization.ObjectDataInput
+
+type ObjectReader = serialization.ObjectReader
+
+func NewObjectDataInput(buffer []byte, offset int32, service ObjectReader, bigEndian bool) *ObjectDataInput {
+	return serialization.NewObjectDataInput(buffer, offset, service, bigEndian)
+}
