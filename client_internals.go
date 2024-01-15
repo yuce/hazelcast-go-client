@@ -49,12 +49,22 @@ type Pair = proto.Pair
 type Schema = serialization.Schema
 type GenericCompactDeserializer = serialization.GenericCompactDeserializer
 type GenericPortableDeserializer = serialization.GenericPortableDeserializer
+type SerializationService = serialization.Service
+type ObjectDataInput = serialization.ObjectDataInput
 
 var (
 	NullFrame  = NewFrameWith([]byte{}, IsNullFlag)
 	BeginFrame = NewFrameWith([]byte{}, BeginDataStructureFlag)
 	EndFrame   = NewFrameWith([]byte{}, EndDataStructureFlag)
 )
+
+func NewSerializationService(cfg *pubserialization.Config) (*SerializationService, error) {
+	return serialization.NewService(cfg, nil)
+}
+
+func NewObjectDataInput(buffer []byte, offset int32, service *SerializationService, bigEndian bool) *ObjectDataInput {
+	return serialization.NewObjectDataInput(buffer, offset, service, bigEndian)
+}
 
 func NewClientMessageForEncode() *ClientMessage {
 	return proto.NewClientMessageForEncode()
