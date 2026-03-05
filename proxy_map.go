@@ -591,11 +591,8 @@ func (m *Map) getAllFromRemote(ctx context.Context, keyCount int, partitionToKey
 	futures := make([]cb.Future, 0, len(partitionToKeys))
 	for pid := range partitionToKeys {
 		pid := pid
-		request := codec.EncodeMapGetAllRequest(m.name, partitionToKeys[pid])
 		fut := m.invoker.CB().TryContextFuture(ctx, func(ctx context.Context, attempt int) (interface{}, error) {
-			if attempt > 0 {
-				request = request.Copy()
-			}
+			request := codec.EncodeMapGetAllRequest(m.name, partitionToKeys[pid])
 			res, err := m.invokeOnPartition(ctx, request, pid)
 			if err != nil {
 				return nil, err
@@ -613,6 +610,33 @@ func (m *Map) getAllFromRemote(ctx context.Context, keyCount int, partitionToKey
 		}
 		pairs := fr.([]proto.Pair)
 		result = append(result, pairs...)
+	}
+	return result, nil
+}
+
+func (m *Map) getAllFromRemote2(ctx context.Context, keyCount int, partitionToKeys map[int32][]serialization.Data) ([]types.Entry, error) {
+	futures := make([]cb.Future, 0, len(partitionToKeys))
+	for pid := range partitionToKeys {
+		pid := pid
+		fut := m.invoker.CB().TryContextFuture(ctx, func(ctx context.Context, attempt int) (interface{}, error) {
+			request := codec.EncodeMapGetAllRequest(m.name, partitionToKeys[pid])
+			res, err := m.invokeOnPartition(ctx, request, pid)
+			if err != nil {
+				return nil, err
+			}
+			pairs := codec.DecodeMapGetAllResponse(res)
+			return m.convertPairsToEntries(pairs)
+		})
+		futures = append(futures, fut)
+	}
+	result := make([]types.Entry, 0, keyCount)
+	for _, fut := range futures {
+		fr, err := fut.Result()
+		if err != nil {
+			return nil, err
+		}
+		entries := fr.([]types.Entry)
+		result = append(result, entries...)
 	}
 	return result, nil
 }
@@ -879,11 +903,7 @@ func (m *Map) getAll(ctx context.Context, keys []interface{}) ([]types.Entry, er
 	if err != nil {
 		return nil, err
 	}
-	pairs, err := m.getAllFromRemote(ctx, len(keys), partitionToKeys)
-	if err != nil {
-		return nil, err
-	}
-	return m.convertPairsToEntries(pairs)
+	return m.getAllFromRemote2(ctx, len(keys), partitionToKeys)
 }
 
 // GetEntrySet returns a clone of the mappings contained in this map.
