@@ -22,9 +22,8 @@ jobs:
         id: composite
         uses: hazelcast/hazelcast-tpm/membership@main
         with:
-          organization-name: 'hazelcast'
           member-name: ${{ github.actor }}
-          token: ${{ secrets.PAT }}
+          token: ${{ secrets.GH_TOKEN }}
 
   test_client:
     name: Run code coverage and upload to Codecov
@@ -74,7 +73,7 @@ jobs:
 
       - name: Publish results to Codecov for PR coming from hazelcast organization
         if: ${{ github.event_name == 'pull_request_target' }}
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           use_oidc: true
           files: coverage.out
@@ -83,7 +82,7 @@ jobs:
 
       - name: Publish results to Codecov for Push
         if: ${{ github.event_name == 'push' }}
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           use_oidc: true
           files: coverage.out
@@ -91,7 +90,7 @@ jobs:
         
       - name: Publish result to Codecov for PR coming from community
         if: ${{ github.event_name == 'workflow_dispatch' }}
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           use_oidc: true
           files: coverage.out
