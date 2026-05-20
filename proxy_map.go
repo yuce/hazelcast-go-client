@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2025, Hazelcast, Inc. All Rights Reserved.
+ * Copyright (c) 2008-2026, Hazelcast, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -587,7 +587,7 @@ func (m *Map) getFromRemote(ctx context.Context, keyData serialization.Data) (in
 	return m.convertToObject(codec.DecodeMapGetResponse(response))
 }
 
-func (m *Map) getAllFromRemote(ctx context.Context, keyCount int, partitionToKeys map[int32][]serialization.Data) ([]proto.Pair, error) {
+func (m *Map) getAllPairsFromRemote(ctx context.Context, keyCount int, partitionToKeys map[int32][]serialization.Data) ([]proto.Pair, error) {
 	futures := make([]cb.Future, 0, len(partitionToKeys))
 	for pid := range partitionToKeys {
 		pid := pid
@@ -614,7 +614,7 @@ func (m *Map) getAllFromRemote(ctx context.Context, keyCount int, partitionToKey
 	return result, nil
 }
 
-func (m *Map) getAllFromRemote2(ctx context.Context, keyCount int, partitionToKeys map[int32][]serialization.Data) ([]types.Entry, error) {
+func (m *Map) getAllEntriesFromRemote(ctx context.Context, keyCount int, partitionToKeys map[int32][]serialization.Data) ([]types.Entry, error) {
 	futures := make([]cb.Future, 0, len(partitionToKeys))
 	for pid := range partitionToKeys {
 		pid := pid
@@ -903,7 +903,7 @@ func (m *Map) getAll(ctx context.Context, keys []interface{}) ([]types.Entry, er
 	if err != nil {
 		return nil, err
 	}
-	return m.getAllFromRemote2(ctx, len(keys), partitionToKeys)
+	return m.getAllEntriesFromRemote(ctx, len(keys), partitionToKeys)
 }
 
 // GetEntrySet returns a clone of the mappings contained in this map.
