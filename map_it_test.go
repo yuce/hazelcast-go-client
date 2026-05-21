@@ -85,8 +85,6 @@ func TestMap(t *testing.T) {
 		{name: "GetValues", f: mapGetValues},
 		{name: "GetValuesWithPredicate", f: mapGetValuesWithPredicate},
 		{name: "IsEmptySize", f: mapIsEmptySize},
-		{name: "LoadAllReplacing", f: mapLoadAllReplacing, noParallel: true},
-		{name: "LoadAllWithoutReplacing", f: mapLoadAllWithoutReplacing, noParallel: true},
 		{name: "Lock", f: mapLock},
 		{name: "LockWithLease", f: mapLockWithLease},
 		{name: "MapSetGet1000", f: mapMapSetGet1000},
@@ -642,53 +640,6 @@ func mapFlush(t *testing.T) {
 		it.Must(m.Set(context.Background(), "k1", "v1"))
 		if err := m.Flush(context.Background()); err != nil {
 			t.Fatal(err)
-		}
-	})
-}
-
-func mapLoadAllWithoutReplacing(t *testing.T) {
-	// NOTE: do not parallize this test, it uses a static map name.
-	makeMapName := func(_ ...string) string {
-		// the map name for this test should be static.
-		return "test-map"
-	}
-	it.MapTesterWithConfigAndName(t, makeMapName, nil, func(t *testing.T, m *hz.Map) {
-		putSampleKeyValues(m, 2)
-		it.Must(m.EvictAll(context.Background()))
-		it.Must(m.PutTransient(context.Background(), "k0", "new-v0"))
-		it.Must(m.PutTransient(context.Background(), "k1", "new-v1"))
-		it.Must(m.LoadAllWithoutReplacing(context.Background(), "k0", "k1"))
-		targetEntrySet := []types.Entry{
-			{Key: "k0", Value: "new-v0"},
-			{Key: "k1", Value: "new-v1"},
-		}
-		entrySet := it.MustValue(m.GetAll(context.Background(), "k0", "k1")).([]types.Entry)
-		if !entriesEqualUnordered(targetEntrySet, entrySet) {
-			t.Fatalf("target %#v != %#v", targetEntrySet, entrySet)
-		}
-	})
-}
-
-func mapLoadAllReplacing(t *testing.T) {
-	// NOTE: do not parallize this test, it uses a static map name.
-	makeMapName := func(_ ...string) string {
-		// the map name for this test should be static.
-		return "test-map"
-	}
-	it.MapTesterWithConfigAndName(t, makeMapName, nil, func(t *testing.T, m *hz.Map) {
-		keys := putSampleKeyValues(m, 10)
-		it.Must(m.EvictAll(context.Background()))
-		it.Must(m.LoadAllReplacing(context.Background()))
-		entrySet := it.MustValue(m.GetAll(context.Background(), keys...)).([]types.Entry)
-		if len(keys) != len(entrySet) {
-			t.Fatalf("target len: %d != %d", len(keys), len(entrySet))
-		}
-		it.Must(m.EvictAll(context.Background()))
-		keys = keys[:5]
-		it.Must(m.LoadAllReplacing(context.Background(), keys...))
-		entrySet = it.MustValue(m.GetAll(context.Background(), keys...)).([]types.Entry)
-		if len(keys) != len(entrySet) {
-			t.Fatalf("target len: %d != %d", len(keys), len(entrySet))
 		}
 	})
 }
@@ -1633,6 +1584,63 @@ func mapMapSetGetLargePayload(t *testing.T) {
 		if !assert.Equal(t, payload, v) {
 			t.FailNow()
 		}
+	})
+}
+
+func TestMapLoadAll(t *testing.T) {
+	// This is a separate test from other Map tests, since it must run against a cluster with a single member.
+	// That's a limitation of the underlying SampleMapStore used for tests.
+	it.TesterWithCluster(t, func(t *testing.T, cluster *it.TestCluster) {
+		ctx := context.Background()
+		client := it.MustClient(hz.StartNewClientWithConfig(ctx, cluster.DefaultConfig()))
+		t.Run("replacing", func(t *testing.T) {
+			m := it.MustValue(client.GetMap(ctx, "map-with-store-replacing")).(*hz.Map)
+			keys := putSampleKeyValues(m, 10)
+			// when no keys are provided, all keys must be loaded
+			it.Must(m.EvictAll(ctx))
+			it.Must(m.LoadAllReplacing(ctx))
+			assert.Equal(t, 10, it.MustValue(m.Size(ctx)))
+			// if some keys are provided, only those keys must be loaded
+			it.Must(m.EvictAll(ctx))
+			assert.Equal(t, 0, it.MustValue(m.Size(ctx)))
+			keys = keys[:5]
+			it.Must(m.LoadAllReplacing(ctx, keys...))
+			assert.Equal(t, 5, it.MustValue(m.Size(ctx)))
+		})
+		t.Run("without-replacing", func(t *testing.T) {
+			ctx := context.Background()
+			m := it.MustValue(client.GetMap(ctx, "map-with-store-not-replacing")).(*hz.Map)
+			putSampleKeyValues(m, 2)
+			// when no keys are provided, all keys must be loaded
+			it.Must(m.EvictAll(ctx))
+			it.Must(m.PutTransient(ctx, "k0new", "new-v0"))
+			it.Must(m.PutTransient(ctx, "k1", "new-v1")) // not replaced
+			it.Must(m.LoadAllWithoutReplacing(ctx))
+			assert.Equal(t, 3, it.MustValue(m.Size(ctx)))
+			targetEntrySet := []types.Entry{
+				{Key: "k0", Value: "v0"},
+				{Key: "k0new", Value: "new-v0"},
+				{Key: "k1", Value: "new-v1"},
+			}
+			entrySet := it.MustValue(m.GetAll(ctx, "k0", "k0new", "k1")).([]types.Entry)
+			if !entriesEqualUnordered(targetEntrySet, entrySet) {
+				t.Fatalf("target %#v != %#v", targetEntrySet, entrySet)
+			}
+			// if some keys are provided, only those keys must be loaded
+			it.Must(m.EvictAll(ctx))
+			it.Must(m.PutTransient(ctx, "k0new", "new-v0"))
+			it.Must(m.PutTransient(ctx, "k1", "new-v1")) // not replaced
+			it.Must(m.LoadAllWithoutReplacing(ctx, "k0new", "k1"))
+			assert.Equal(t, 2, it.MustValue(m.Size(ctx)))
+			targetEntrySet = []types.Entry{
+				{Key: "k0new", Value: "new-v0"},
+				{Key: "k1", Value: "new-v1"},
+			}
+			entrySet = it.MustValue(m.GetAll(ctx, "k0new", "k1")).([]types.Entry)
+			if !entriesEqualUnordered(targetEntrySet, entrySet) {
+				t.Fatalf("target %#v != %#v", targetEntrySet, entrySet)
+			}
+		})
 	})
 }
 
